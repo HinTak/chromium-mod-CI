@@ -10,7 +10,10 @@ jobs:
     container: fedora:39
     steps:
       - run: cat /etc/os-release
+      - run: du
       - run: dnf install -y curl dnf-utils rpm-build
       - run: curl -o a.rpm https://kojipkgs.fedoraproject.org//packages/chromium/120.0.6099.109/1.fc39/src/chromium-120.0.6099.109-1.fc39.src.rpm
+      - run: ls -l a.rpm
       - run: dnf builddep -y --srpm a.rpm
-      - run: rpmbuild --rebuild a.rpm
+      - run: du
+#      - run: rpmbuild --rebuild a.rpm
