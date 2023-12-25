@@ -16,4 +16,6 @@ jobs:
       - run: ls -l a.rpm
       - run: dnf builddep -y --srpm a.rpm
       - run: df
-#      - run: rpmbuild --rebuild a.rpm
+      - run: rpm -ivh a.rpm
+      - run: pushd ~/rpmbuild/SPECS/ && rpmbuild -bp chromium.specs && popd
+      - run: df
