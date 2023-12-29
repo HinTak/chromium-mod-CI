@@ -23,4 +23,5 @@ jobs:
       - run: find ~/rpmbuild/BUILD -depth -type d -name 'third_*' -exec du {} \;
       - run: du -s ~/rpmbuild/BUILD/chromium-*/third_party/*
       - run: du -s ~/rpmbuild/BUILD/chromium-*/third_party/*/third_party
+      - run: du -s ~/rpmbuild/BUILD/chromium-*
       - run: df
