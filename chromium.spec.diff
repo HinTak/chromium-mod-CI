@@ -1,0 +1,18 @@
+diff --git a/chromium.spec b/chromium.spec
+index ef42c04..074cdf7 100644
+--- a/chromium.spec
++++ b/chromium.spec
+@@ -1123,6 +1123,13 @@ sed -i 's/getenv("CHROME_VERSION_EXTRA")/"Fedora Project"/' chrome/common/channe
+ # Fix hardcoded path in remoting code
+ sed -i 's|/opt/google/chrome-remote-desktop|%{crd_path}|g' remoting/host/setup/daemon_controller_delegate_linux.cc
+ 
++# third_party/rust-src is 4.3G and we had enable_rust=false
++rm -rf third_party/rust-src
++# 1.9GB
++rm -rf third_party/llvm
++# 2.6GB
++rm -rf third_party/angle/third_party
++
+ %build
+ # utf8 issue on epel7, Internal parsing error 'ascii' codec can't
+ # decode byte 0xe2 in position 474: ordinal not in range(128)
