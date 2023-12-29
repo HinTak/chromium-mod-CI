@@ -1,5 +1,5 @@
 diff --git a/chromium.spec b/chromium.spec
-index ef42c04..bc8e4ef 100644
+index ef42c04..9b41863 100644
 --- a/chromium.spec
 +++ b/chromium.spec
 @@ -1123,6 +1123,11 @@ sed -i 's/getenv("CHROME_VERSION_EXTRA")/"Fedora Project"/' chrome/common/channe
@@ -14,3 +14,12 @@ index ef42c04..bc8e4ef 100644
  %build
  # utf8 issue on epel7, Internal parsing error 'ascii' codec can't
  # decode byte 0xe2 in position 474: ordinal not in range(128)
+@@ -1130,6 +1135,8 @@ sed -i 's|/opt/google/chrome-remote-desktop|%{crd_path}|g' remoting/host/setup/d
+ export LANG=en_US.UTF-8
+ %endif
+ 
++rm %{SOURCE0} 
++
+ # reduce warnings
+ %if %{clang}
+ FLAGS=' -Wno-deprecated-declarations -Wno-unknown-warning-option -Wno-unused-command-line-argument'
