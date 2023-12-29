@@ -20,6 +20,8 @@ jobs:
       - run: df
       - run: rpm -ivh a.rpm
       - run: rm a.rpm
+      - uses: actions/checkout@v4
+      - run: patch ~/rpmbuild/SPECS/chromium.spec chromium.spec.diff
       - run: pushd ~/rpmbuild/SPECS/ && rpmbuild -bp chromium.spec && popd
       - run: find ~/rpmbuild/BUILD -type d -name 'third_*' -print -exec ls -l {} \;
       - run: find ~/rpmbuild/BUILD -depth -type d -name 'third_*' -exec du {} \;
@@ -27,3 +29,4 @@ jobs:
       - run: du -s ~/rpmbuild/BUILD/chromium-*/third_party/*/third_party
       - run: du -s ~/rpmbuild/BUILD/chromium-*
       - run: df
+      - run: pushd ~/rpmbuild/SPECS/ && rpmbuild -bc chromium.spec && popd
