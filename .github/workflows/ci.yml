@@ -19,6 +19,6 @@ jobs:
       - run: rpm -ivh a.rpm
       - run: rm a.rpm
       - run: pushd ~/rpmbuild/SPECS/ && rpmbuild -bp chromium.spec && popd
-      - run: find ~/rpmbuild/BUILD -type d -name 'third_*' -exec ls -l {} \;
+      - run: find ~/rpmbuild/BUILD -type d -name 'third_*' -print -exec ls -l {} \;
       - run: find ~/rpmbuild/BUILD -type d -name 'third_*' -exec du {} \;
       - run: df
