@@ -1,7 +1,59 @@
 diff --git a/chromium.spec b/chromium.spec
-index ef42c04..9b41863 100644
+index dcfcea8..f7dc1be 100644
 --- a/chromium.spec
 +++ b/chromium.spec
+@@ -35,7 +35,7 @@
+ 	ninja -j %{numjobs} -C '%1' '%2'
+ 
+ # enable|disable headless client build
+-%global build_headless 1
++%global build_headless 0
+ 
+ # enable|disable chrome-remote-desktop build
+ %global build_remoting 0
+@@ -121,7 +121,7 @@
+ %global remotingbuilddir out/Remoting
+ 
+ # enable|disable debuginfo
+-%global enable_debug 1
++%global enable_debug 0
+ # disable debuginfo due to a bug in debugedit on el7
+ # error: canonicalization unexpectedly shrank by one character
+ # https://bugzilla.redhat.com/show_bug.cgi?id=304121
+@@ -132,7 +132,7 @@
+ %global debug_package %{nil}
+ %global debug_level 0
+ %else
+-%global debug_level 1
++%global debug_level 0
+ # workaround for the error empty file debugsource
+ %undefine _debugsource_packages
+ %endif
+@@ -166,7 +166,7 @@
+ %global cfi 0
+ %if %{clang}
+ %if 0%{?fedora} || 0%{?rhel} > 7
+-%global cfi 1
++%global cfi 0
+ %endif
+ %endif
+ 
+@@ -179,13 +179,13 @@
+ 
+ # enable qt backend for el >= 8 and fedora
+ %if 0%{?rhel} >= 8 || 0%{?fedora}
+-%global use_qt 1
++%global use_qt 0
+ %else
+ %global use_qt 0
+ %endif
+ 
+ %if 0%{?rhel} > 9 || 0%{?fedora}
+-%global use_qt6 1
++%global use_qt6 0
+ %else
+ %global use_qt6 0
+ %endif
 @@ -1123,6 +1123,11 @@ sed -i 's/getenv("CHROME_VERSION_EXTRA")/"Fedora Project"/' chrome/common/channe
  # Fix hardcoded path in remoting code
  sed -i 's|/opt/google/chrome-remote-desktop|%{crd_path}|g' remoting/host/setup/daemon_controller_delegate_linux.cc
@@ -18,7 +70,7 @@ index ef42c04..9b41863 100644
  export LANG=en_US.UTF-8
  %endif
  
-+rm %{SOURCE0} 
++rm %{SOURCE0}
 +
  # reduce warnings
  %if %{clang}
