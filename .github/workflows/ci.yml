@@ -21,4 +21,6 @@ jobs:
       - run: pushd ~/rpmbuild/SPECS/ && rpmbuild -bp chromium.spec && popd
       - run: find ~/rpmbuild/BUILD -type d -name 'third_*' -print -exec ls -l {} \;
       - run: find ~/rpmbuild/BUILD -depth -type d -name 'third_*' -exec du {} \;
+      - run: du -s ~/rpmbuild/BUILD/chromium-*/third_party/*
+      - run: du -s ~/rpmbuild/BUILD/chromium-*/third_party/*/third_party
       - run: df
