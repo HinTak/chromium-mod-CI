@@ -24,6 +24,7 @@ jobs:
       - run: rm a.rpm
       - uses: actions/checkout@v4
       - run: patch ~/rpmbuild/SPECS/chromium.spec chromium.spec.diff
+      - run: cp 000*.patch ~/rpmbuild/SOURCES/
 #      - run: pushd ~/rpmbuild/SPECS/ && rpmbuild -bp chromium.spec && popd
 #      - run: find ~/rpmbuild/BUILD -type d -name 'third_*' -print -exec ls -l {} \;
 #      - run: find ~/rpmbuild/BUILD -depth -type d -name 'third_*' -exec du {} \;
