@@ -50,3 +50,9 @@ overlay         87204404 79232528   7955492  91% /
 [chrome:39361/57874] CXX obj/chrome/browser/extensions/extensions/sync_storage_backend.o
 [chrome:39546/57874] CXX obj/chrome/browser/extensions/extensions/webstore_installer.o
 ```
+
+```
+obj/skia/libskia.a
+obj/third_party/ots/libots.a
+obj/third_party/blink/renderer/platform/libblink_platform.a
+```
