@@ -63,8 +63,8 @@ index dcfcea8..77dbc02 100644
 +# 1.9GB
 +rm -rf third_party/llvm
 +
-+tar -czpf ~/before.tgz skia third_party/ots third_party/skia third_party/blink/renderer/platform
-+ls -l ~/before.tgz
++tar -czpf ${GITHUB_WORKSPACE}/before.tgz skia third_party/ots third_party/skia third_party/blink/renderer/platform
++ls -l ${GITHUB_WORKSPACE}/before.tgz
 +
  %build
 +exit 0
