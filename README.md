@@ -43,3 +43,7 @@ overlay         87204404 79232528   7955492  91% /
 1072660	/github/home/rpmbuild/BUILD/chromium-120.0.6099.109/third_party/swiftshader
 19145080	/github/home/rpmbuild/BUILD/chromium-120.0.6099.109
 ```
+
+```
+[headless_shell:31366/41287] CXX obj/content/browser/browser/screen_change_monitor.o
+```
