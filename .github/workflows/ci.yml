@@ -10,6 +10,8 @@ jobs:
   fedora-job:
     runs-on: ubuntu-latest
     container: fedora:39
+    permissions:
+      contents: write
     steps:
       - run: cat /etc/os-release
       - run: df
@@ -30,3 +32,7 @@ jobs:
 #      - run: du -s ~/rpmbuild/BUILD/chromium-*
 #      - run: df
       - run: pushd ~/rpmbuild/SPECS/ && rpmbuild -bc chromium.spec && popd
+      - uses: actions/upload-artifact@v3
+        with:
+          name: before
+          path: before.tgz
