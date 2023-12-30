@@ -1,0 +1,83 @@
+From 8cc61a8f14921750714742cdd537c7fc4b1a7f37 Mon Sep 17 00:00:00 2001
+From: Hin-Tak Leung <htl10@users.sourceforge.net>
+Date: Sat, 30 Dec 2023 21:32:36 +0000
+Subject: [PATCH 2/2] m120 use FreeType for non-Linux
+
+Signed-off-by: Hin-Tak Leung <htl10@users.sourceforge.net>
+---
+ .../renderer/platform/fonts/opentype/font_format_check.cc | 6 +++++-
+ .../renderer/platform/fonts/opentype/font_format_check.h  | 1 +
+ .../renderer/platform/fonts/web_font_typeface_factory.cc  | 8 ++++++++
+ .../renderer/platform/fonts/web_font_typeface_factory.h   | 3 ++-
+ 4 files changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/third_party/blink/renderer/platform/fonts/opentype/font_format_check.cc b/third_party/blink/renderer/platform/fonts/opentype/font_format_check.cc
+index d43668f1..e0f02ce6 100644
+--- a/third_party/blink/renderer/platform/fonts/opentype/font_format_check.cc
++++ b/third_party/blink/renderer/platform/fonts/opentype/font_format_check.cc
+@@ -89,12 +89,16 @@ bool FontFormatCheck::IsSbixColorFont() {
+   return table_tags_.size() && table_tags_.Contains(HB_TAG('s', 'b', 'i', 'x'));
+ }
+ 
++bool FontFormatCheck::IsSvgColorFont() {
++  return table_tags_.size() && table_tags_.Contains(HB_TAG('S', 'V', 'G', ' '));
++}
++
+ bool FontFormatCheck::IsCff2OutlineFont() {
+   return table_tags_.size() && table_tags_.Contains(HB_TAG('C', 'F', 'F', '2'));
+ }
+ 
+ bool FontFormatCheck::IsColorFont() {
+-  return IsCbdtCblcColorFont() || IsColrCpalColorFont() || IsSbixColorFont();
++  return IsCbdtCblcColorFont() || IsColrCpalColorFont() || IsSbixColorFont() || IsSvgColorFont();
+ }
+ 
+ FontFormatCheck::VariableFontSubType FontFormatCheck::ProbeVariableFont(
+diff --git a/third_party/blink/renderer/platform/fonts/opentype/font_format_check.h b/third_party/blink/renderer/platform/fonts/opentype/font_format_check.h
+index f24c1733..bb5f7ba6 100644
+--- a/third_party/blink/renderer/platform/fonts/opentype/font_format_check.h
++++ b/third_party/blink/renderer/platform/fonts/opentype/font_format_check.h
+@@ -27,6 +27,7 @@ class PLATFORM_EXPORT FontFormatCheck {
+   bool IsColrCpalColorFontV0();
+   bool IsColrCpalColorFontV1();
+   bool IsSbixColorFont();
++  bool IsSvgColorFont();
+   bool IsCff2OutlineFont();
+   bool IsColorFont();
+ 
+diff --git a/third_party/blink/renderer/platform/fonts/web_font_typeface_factory.cc b/third_party/blink/renderer/platform/fonts/web_font_typeface_factory.cc
+index 4e475370..f0bc308c 100644
+--- a/third_party/blink/renderer/platform/fonts/web_font_typeface_factory.cc
++++ b/third_party/blink/renderer/platform/fonts/web_font_typeface_factory.cc
+@@ -61,6 +61,14 @@ bool WebFontTypefaceFactory::CreateTypeface(sk_sp<SkData> data,
+     return typeface.get();
+   }
+ 
++  if (format_check.IsSvgColorFont()) {
++    typeface = MakeTypefaceFreeType(data);
++    if (typeface) {
++      ReportInstantiationResult(InstantiationResult::kSuccessSvgFont);
++    }
++    return typeface.get();
++  }
++
+   if (format_check.IsSbixColorFont()) {
+     typeface = MakeSbixTypeface(data);
+     if (typeface) {
+diff --git a/third_party/blink/renderer/platform/fonts/web_font_typeface_factory.h b/third_party/blink/renderer/platform/fonts/web_font_typeface_factory.h
+index 66569c3f..0300a492 100644
+--- a/third_party/blink/renderer/platform/fonts/web_font_typeface_factory.h
++++ b/third_party/blink/renderer/platform/fonts/web_font_typeface_factory.h
+@@ -46,7 +46,8 @@ class WebFontTypefaceFactory {
+     kSuccessSbixFont = 5,
+     kSuccessColrCpalFont = 6,
+     kSuccessColrV1Font = 7,
+-    kMaxValue = kSuccessColrV1Font
++    kSuccessSvgFont = 8,
++    kMaxValue = kSuccessSvgFont
+   };
+ 
+   static void ReportInstantiationResult(InstantiationResult);
+-- 
+2.43.0
+
