@@ -1,5 +1,5 @@
 diff --git a/chromium.spec b/chromium.spec
-index dcfcea8..daa8f07 100644
+index dcfcea8..9661a41 100644
 --- a/chromium.spec
 +++ b/chromium.spec
 @@ -35,7 +35,7 @@
@@ -81,7 +81,7 @@ index dcfcea8..daa8f07 100644
  
 +%build_target %{builddir} platform
 +
-+exit 0
++exit $?
 +
  %build_target %{builddir} chrome
  %build_target %{builddir} chrome_sandbox
