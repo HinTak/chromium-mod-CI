@@ -46,4 +46,5 @@ overlay         87204404 79232528   7955492  91% /
 
 ```
 [headless_shell:31366/41287] CXX obj/content/browser/browser/screen_change_monitor.o
+[chrome:39361/57874] CXX obj/chrome/browser/extensions/extensions/sync_storage_backend.o
 ```
