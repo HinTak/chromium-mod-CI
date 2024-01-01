@@ -56,3 +56,12 @@ obj/skia/libskia.a
 obj/third_party/ots/libots.a
 obj/third_party/blink/renderer/platform/libblink_platform.a
 ```
+
+```
+[third_party/blink/renderer/platform:6018/23003] CXX obj/third_party/ots/ots/ots.o
+[third_party/blink/renderer/platform:8141/23003] CXX obj/skia/skia/fontmgr_default_linux.o
+[third_party/blink/renderer/platform:8330/23003] CXX obj/skia/skia/SkFontHost_FreeType.o
+[third_party/blink/renderer/platform:21067/23003] CXX obj/third_party/blink/renderer/platform/platform/font_format_check.o
+[third_party/blink/renderer/platform:21118/23003] CXX obj/third_party/blink/renderer/platform/platform/web_font_typeface_factory.o
+[third_party/blink/renderer/platform:21121/23003] CXX obj/third_party/blink/renderer/platform/platform/web_font_decoder.o
+```
