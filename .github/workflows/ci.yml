@@ -34,10 +34,10 @@ jobs:
 #      - run: df
       - run: pushd ~/rpmbuild/SPECS/ && rpmbuild -bc chromium.spec && popd
       - run: mkdir after after-big
-      - run: find ~/rpmbuild/BUILD/chromium-* -type f -name libskia.a -print -exec cp {} after \;
-      - run: find ~/rpmbuild/BUILD/chromium-* -type f -name libots.a -print -exec cp {} after \;
-      - run: find ~/rpmbuild/BUILD/chromium-* -type f -name libblink_platform.a -print -exec cp {} after \;
-      - run: find ~/rpmbuild/BUILD/chromium-*/out/Release/ -type f -name '*.a' -print -exec cp {} after-big \;
+      - run: find ~/rpmbuild/BUILD/chromium-* -type f -name libskia.a -print -exec llvm-nm -C {} \;
+      - run: find ~/rpmbuild/BUILD/chromium-* -type f -name libots.a -print -exec llvm-nm -C {} \;
+      - run: find ~/rpmbuild/BUILD/chromium-* -type f -name libblink_platform.a -print -exec llvm-nm -C {} \;
+      - run: tar -cJpf after.txz ~/rpmbuild/BUILD/chromium-*/out/Release/
       - uses: actions/upload-artifact@v3
         with:
           name: before
@@ -45,8 +45,4 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: after
-          path: after
-      - uses: actions/upload-artifact@v3
-        with:
-          name: after-big
-          path: after-big
+          path: after.txz
