@@ -1,3 +1,39 @@
+# Chromium SVG in OpenType support
+
+This is a set of patches to address
+Chromium [Issue 306078: SVG in OpenType support](https://bugs.chromium.org/p/chromium/issues/detail?id=306078).
+Chromium is too large to be built within github's 6 hour limit, so this CI only attempts to build Blink as a library,
+just to verify that the patches build. And that takes just over 5 hours, and I reckon constitute about 40% of chromium.
+The patches are tested in the QT6 versions mentioned below.
+
+m120 is current stable, and the patches are identical to the QT6 m118 versions except relocated (QT6 WebEngine has
+the chromium source tree under `src/3rdparty/chromium/`).
+
+Earlier 118 versions are built in [QT6 WebEngine](https://github.com/HinTak/Qt6WE-OT-SVG) and
+tested with the QT6 browser example in [minimal web browser collections](https://github.com/HinTak/minimal-web-browsers/).
+
+## Discussion
+
+The patches are logically in 3 parts, but in 2 files:
+
+- a one-line hook to connect Skia's SVG module with the skia's FreeType font manager. It only needs to be done once. In Skia Python, it is done at
+[python module loading time](https://github.com/kyamagu/skia-python/commit/e5f2e6361d0e6a40e5077fa46897a556f793a18d), although the earlier work to
+[test and set just before it is needed](https://github.com/kyamagu/skia-python/commit/9039fbd0848b63070ef1b7392ab7d546de125622) is gauranteed to work,
+at the risk of doing unnessary work multiple times. Here I do both, as I am not sure `skia/ext/fontmgr_default_linux.cc` is the only entry point.
+Somebody more knowledgeable might be able to indicate a better location otherwise. Plus some changes to the skia build script to include the
+optional svg module and what it depends on.
+
+- Modify the included OpenType Sanitizer related code to pass SVG through. This is quite straight-forward, referencing treatment of other tables.
+
+These two allows OT-SVG to work on Linux, so it is combined into a "patch 1".
+
+- Blink already includes diversion from CoreText/DirectWrite to FreeType on non-Linux, for font formats not supported by the host OS. A small addition
+along the same line as other font formats is added for SVG too.
+
+This "patch 2" is only passively tested on Linux (as in it has no affect on "patch 1").
+
+## misc
+
 Bare:
 
 ```
