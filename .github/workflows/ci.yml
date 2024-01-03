@@ -46,3 +46,4 @@ jobs:
         with:
           name: after
           path: after.txz
+      - run: df
