@@ -20,7 +20,9 @@ jobs:
       - run: dnf install -y curl dnf-utils rpm-build git
       - uses: actions/checkout@v4
 # latest tag: 122.0.6232.1
-      - run: git clone --depth 1 --recurse-submodules --shallow-submodules https://chromium.googlesource.com/chromium/src
+# 121.0.6167.51
+# 120.0.6099.208 - --recurse-submodules --shallow-submodules
+      - run: git clone --depth 1 https://chromium.googlesource.com/chromium/src
       - run: df
       - uses: actions/upload-artifact@v3
 #        with:
