@@ -19,9 +19,9 @@ jobs:
       - run: df
       - run: dnf install -y curl dnf-utils rpm-build git
       - uses: actions/checkout@v4
-#      - run:  ./chromium-latest.py --stable --cleansources
-#      - run:  ./chromium-latest.py --beta --cleansources
-#      - run:  ./chromium-latest.py --dev --cleansources
+# latest tag: 122.0.6232.1
+      - run: git clone --depth 1 --recurse-submodules --shallow-submodules https://chromium.googlesource.com/chromium/src
+      - run: df
       - uses: actions/upload-artifact@v3
 #        with:
 #          name: before
