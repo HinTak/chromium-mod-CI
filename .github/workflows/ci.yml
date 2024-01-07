@@ -19,7 +19,7 @@ jobs:
       - run: df
       - run: dnf install -y curl dnf-utils rpm-build git
       - uses: actions/checkout@v4
-      - run:  ./chromium-latest.py --stable --cleansources
+#      - run:  ./chromium-latest.py --stable --cleansources
       - run:  ./chromium-latest.py --beta --cleansources
       - run:  ./chromium-latest.py --dev --cleansources
       - uses: actions/upload-artifact@v3
