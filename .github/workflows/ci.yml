@@ -22,7 +22,7 @@ jobs:
 # latest tag: 122.0.6232.1
 # 121.0.6167.51
 # 120.0.6099.208 - --recurse-submodules --shallow-submodules
-      - run: git clone --depth 1 --recurse-submodules=third_party/skia --recurse-submodules=third_party/ots/src/ --recurse-submodules=third_party/angle  --shallow-submodules https://chromium.googlesource.com/chromium/src
+      - run: git clone --depth 1 --recurse-submodules=third_party/skia --recurse-submodules=third_party/ots/src/  --shallow-submodules https://chromium.googlesource.com/chromium/src
 #      - run:  ./chromium-latest.py --version 122.0.6232.1 --ffmpegclean --ffmpegarm
       - run: df
 #      - uses: actions/upload-artifact@v3
