@@ -58,8 +58,8 @@ index dcfcea8..f4a8501 100644
  # remove ldflags -Wl,-mllvm,-disable-auto-upgrade-debug-info which is not supported
  Patch357: chromium-120-clang16-disable-auto-upgrade-debug-info.patch
  
-+Patch1000: 0001-m120-OT-SVG-hook.patch
-+Patch1001: 0002-m120-use-FreeType-for-non-Linux.patch
++Patch1000: 0001-m121-OT-SVG-hook.patch
++Patch1001: 0002-m121-use-FreeType-for-non-Linux-OT-SVG-support.patch
 +
  # upstream patches
  
