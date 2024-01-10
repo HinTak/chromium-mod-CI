@@ -22,7 +22,7 @@ jobs:
 # latest tag: 122.0.6232.1
 # 121.0.6167.51
 # 120.0.6099.208 - --recurse-submodules --shallow-submodules
-      - run: git -b 121.0.6167.51 clone --depth 1 --recurse-submodules=third_party/skia --recurse-submodules=third_party/ots/src/  --shallow-submodules https://chromium.googlesource.com/chromium/src chromium
+      - run: git clone -b 121.0.6167.51 --depth 1 --recurse-submodules=third_party/skia --recurse-submodules=third_party/ots/src/  --shallow-submodules https://chromium.googlesource.com/chromium/src chromium
       - run: pushd chromium && tar -czpf ${GITHUB_WORKSPACE}/before.tgz skia third_party/ots third_party/skia third_party/blink/renderer/platform chrome/VERSION && popd
 #      - run:  ./chromium-latest.py --version 122.0.6232.1 --ffmpegclean --ffmpegarm
       - run: df
