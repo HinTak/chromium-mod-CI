@@ -1,0 +1,145 @@
+From c55008eb090b24f6ba6751b8fd99493a36b4b45c Mon Sep 17 00:00:00 2001
+From: Hin-Tak Leung <htl10@users.sourceforge.net>
+Date: Wed, 10 Jan 2024 21:25:00 +0000
+Subject: [PATCH 1/2] m122 OT-SVG hook
+
+Adjusted for 122.0.6236.0
+
+Signed-off-by: Hin-Tak Leung <htl10@users.sourceforge.net>
+---
+ skia/BUILD.gn                                               | 5 ++---
+ skia/ext/font_utils.cc                                      | 3 +++
+ .../blink/renderer/platform/fonts/web_font_decoder.cc       | 2 ++
+ third_party/ots/src/src/ots.cc                              | 1 +
+ third_party/skia/src/ports/SkFontHost_FreeType.cpp          | 6 ++++++
+ third_party/skia/src/ports/SkScalerContext_win_dw.cpp       | 4 ++++
+ 6 files changed, 18 insertions(+), 3 deletions(-)
+
+diff --git a/skia/BUILD.gn b/skia/BUILD.gn
+index 75018337..7f2acb52 100644
+--- a/skia/BUILD.gn
++++ b/skia/BUILD.gn
+@@ -401,9 +401,6 @@ component("skia") {
+     defines += [ "SK_CODEC_DECODES_JPEG_GAINMAPS" ]
+   }
+ 
+-  # Remove unused util sources.
+-  sources -= [ "//third_party/skia/src/utils/SkParsePath.cpp" ]
+-
+   if (is_win) {
+     libs = [ "fontsub.lib" ]
+   }
+@@ -621,6 +618,8 @@ component("skia") {
+     sources += skia_sksg_sources
+     sources += skia_shaper_primitive_sources
+   }
++  import("//third_party/skia/modules/svg/svg.gni")
++  sources += skia_svg_sources
+ }
+ 
+ # Template for things that are logically part of :skia, but need to be split out
+diff --git a/skia/ext/font_utils.cc b/skia/ext/font_utils.cc
+index 3631af6c..8b692e5b 100644
+--- a/skia/ext/font_utils.cc
++++ b/skia/ext/font_utils.cc
+@@ -10,6 +10,8 @@
+ #include "third_party/skia/include/core/SkFontMgr.h"
+ #include "third_party/skia/include/core/SkRefCnt.h"
+ #include "third_party/skia/include/core/SkTypeface.h"
++#include "third_party/skia/include/core/SkGraphics.h"
++#include "third_party/skia/modules/svg/include/SkSVGOpenTypeSVGDecoder.h"
+ 
+ #if BUILDFLAG(IS_ANDROID)
+ #include "third_party/skia/include/ports/SkFontMgr_android.h"
+@@ -80,6 +82,7 @@ sk_sp<SkFontMgr> DefaultFontMgr() {
+   static std::once_flag flag;
+   static sk_sp<SkFontMgr> mgr;
+   std::call_once(flag, [] {
++    SkGraphics::SetOpenTypeSVGDecoderFactory(SkSVGOpenTypeSVGDecoder::Make);
+     mgr = fontmgr_factory();
+     g_factory_called = true;
+   });
+diff --git a/third_party/blink/renderer/platform/fonts/web_font_decoder.cc b/third_party/blink/renderer/platform/fonts/web_font_decoder.cc
+index 0953dc52..4f283a80 100644
+--- a/third_party/blink/renderer/platform/fonts/web_font_decoder.cc
++++ b/third_party/blink/renderer/platform/fonts/web_font_decoder.cc
+@@ -104,6 +104,7 @@ ots::TableAction BlinkOTSContext::GetTableAction(uint32_t tag) {
+   const uint32_t kCpalTag = OTS_TAG('C', 'P', 'A', 'L');
+   const uint32_t kCff2Tag = OTS_TAG('C', 'F', 'F', '2');
+   const uint32_t kSbixTag = OTS_TAG('s', 'b', 'i', 'x');
++  const uint32_t kSvg_Tag = OTS_TAG('S', 'V', 'G', ' ');
+ #if HB_VERSION_ATLEAST(1, 0, 0)
+   const uint32_t kBaseTag = OTS_TAG('B', 'A', 'S', 'E');
+   const uint32_t kGdefTag = OTS_TAG('G', 'D', 'E', 'F');
+@@ -131,6 +132,7 @@ ots::TableAction BlinkOTSContext::GetTableAction(uint32_t tag) {
+     case kCpalTag:
+     case kCff2Tag:
+     case kSbixTag:
++    case kSvg_Tag:
+ #if HB_VERSION_ATLEAST(1, 0, 0)
+     // Let HarfBuzz handle how to deal with broken tables.
+     case kAvarTag:
+diff --git a/third_party/ots/src/src/ots.cc b/third_party/ots/src/src/ots.cc
+index 5d1e07a9..b1529e8b 100644
+--- a/third_party/ots/src/src/ots.cc
++++ b/third_party/ots/src/src/ots.cc
+@@ -757,6 +757,7 @@ bool ProcessGeneric(ots::FontFile *header,
+              font->GetTable(OTS_TAG('C','B','L','C'))) {
+       // We don't sanitize bitmap tables, but don’t reject bitmap-only fonts if
+       // we are asked to pass them thru.
++  } else if (font->GetTable(OTS_TAG('S','V','G',' '))) {
+   } else {
+       return OTS_FAILURE_MSG_HDR("no supported glyph data table(s) present");
+   }
+diff --git a/third_party/skia/src/ports/SkFontHost_FreeType.cpp b/third_party/skia/src/ports/SkFontHost_FreeType.cpp
+index 76103813..e01c9e48 100644
+--- a/third_party/skia/src/ports/SkFontHost_FreeType.cpp
++++ b/third_party/skia/src/ports/SkFontHost_FreeType.cpp
+@@ -60,6 +60,8 @@
+ #include <freetype/t1tables.h>
+ #include <freetype/ftfntfmt.h>
+ 
++#include "modules/svg/include/SkSVGOpenTypeSVGDecoder.h"
++
+ using namespace skia_private;
+ 
+ namespace {
+@@ -1000,9 +1002,13 @@ SkScalerContext_FreeType::SkScalerContext_FreeType(sk_sp<SkTypeface_FreeType> ty
+         // FT_LOAD_COLOR with scalable fonts means allow SVG.
+         // It also implies attempt to render COLR if available, but this is not used.
+ #if defined(FT_CONFIG_OPTION_SVG)
++        if (!SkGraphics::GetOpenTypeSVGDecoderFactory())
++            SkGraphics::SetOpenTypeSVGDecoderFactory(SkSVGOpenTypeSVGDecoder::Make);
+         if (SkGraphics::GetOpenTypeSVGDecoderFactory()) {
+             fLoadGlyphFlags |= FT_LOAD_COLOR;
+         }
++#else
++#error "FT_CONFIG_OPTION_SVG not on"
+ #endif
+     } else if (FT_HAS_FIXED_SIZES(fFaceRec->fFace)) {
+         fStrikeIndex = chooseBitmapStrike(fFaceRec->fFace.get(), scaleY);
+diff --git a/third_party/skia/src/ports/SkScalerContext_win_dw.cpp b/third_party/skia/src/ports/SkScalerContext_win_dw.cpp
+index da0a83fc..ddb19690 100644
+--- a/third_party/skia/src/ports/SkScalerContext_win_dw.cpp
++++ b/third_party/skia/src/ports/SkScalerContext_win_dw.cpp
+@@ -45,6 +45,8 @@
+ #include "src/utils/win/SkHRESULT.h"
+ #include "src/utils/win/SkTScopedComPtr.h"
+ 
++#include "modules/svg/include/SkSVGOpenTypeSVGDecoder.h"
++
+ #include <dwrite.h>
+ #include <dwrite_1.h>
+ #include <dwrite_3.h>
+@@ -2271,6 +2273,8 @@ bool SkScalerContext_DW::drawSVGImage(const SkGlyph& glyph, SkCanvas& canvas) {
+         return false;
+     }
+ 
++    if (!SkGraphics::GetOpenTypeSVGDecoderFactory())
++        SkGraphics::SetOpenTypeSVGDecoderFactory(SkSVGOpenTypeSVGDecoder::Make);
+     SkGraphics::OpenTypeSVGDecoderFactory svgFactory = SkGraphics::GetOpenTypeSVGDecoderFactory();
+     if (!svgFactory) {
+         return false;
+-- 
+2.43.0
+
