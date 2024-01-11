@@ -51,9 +51,9 @@ jobs:
       - run: ./chromium-latest.py --version 121.0.6167.47 --ffmpegclean --ffmpegarm
       - run: ls -l
       - run: df
-      - run: rm -rf chromium-121.0.6167
+      - run: rm -rf chromium-121.0.6167.47
       - run: df
-      - run: rm -rf chromium-121.0.6167.tar.xz
+      - run: rm -rf chromium-121.0.6167.47.tar.xz
       - run: df
       - run: mv chromium-121.0.6167.47-clean.tar.xz ~/rpmbuild/SOURCES/
       - run: patch ~/rpmbuild/SPECS/chromium.spec chromium.spec.diff
