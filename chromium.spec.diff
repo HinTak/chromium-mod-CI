@@ -1,8 +1,8 @@
 diff --git a/chromium.spec b/chromium.spec
-index dcfcea8..f4a8501 100644
+index b37d37c..e778bff 100644
 --- a/chromium.spec
 +++ b/chromium.spec
-@@ -35,7 +35,7 @@
+@@ -31,7 +31,7 @@
  	ninja -j %{numjobs} -C '%1' '%2'
  
  # enable|disable headless client build
@@ -11,7 +11,7 @@ index dcfcea8..f4a8501 100644
  
  # enable|disable chrome-remote-desktop build
  %global build_remoting 0
-@@ -121,7 +121,7 @@
+@@ -117,7 +117,7 @@
  %global remotingbuilddir out/Remoting
  
  # enable|disable debuginfo
@@ -20,7 +20,7 @@ index dcfcea8..f4a8501 100644
  # disable debuginfo due to a bug in debugedit on el7
  # error: canonicalization unexpectedly shrank by one character
  # https://bugzilla.redhat.com/show_bug.cgi?id=304121
-@@ -132,7 +132,7 @@
+@@ -128,7 +128,7 @@
  %global debug_package %{nil}
  %global debug_level 0
  %else
@@ -29,7 +29,7 @@ index dcfcea8..f4a8501 100644
  # workaround for the error empty file debugsource
  %undefine _debugsource_packages
  %endif
-@@ -166,7 +166,7 @@
+@@ -162,7 +162,7 @@
  %global cfi 0
  %if %{clang}
  %if 0%{?fedora} || 0%{?rhel} > 7
@@ -38,7 +38,7 @@ index dcfcea8..f4a8501 100644
  %endif
  %endif
  
-@@ -179,13 +179,13 @@
+@@ -175,13 +175,13 @@
  
  # enable qt backend for el >= 8 and fedora
  %if 0%{?rhel} >= 8 || 0%{?fedora}
@@ -54,7 +54,16 @@ index dcfcea8..f4a8501 100644
  %else
  %global use_qt6 0
  %endif
-@@ -450,6 +450,9 @@ patch356: chromium-120-disable-FFmpegAllowLists.patch
+@@ -285,7 +285,7 @@
+ %endif
+ 
+ Name:	chromium%{chromium_channel}
+-Version: 120.0.6099.199
++Version: 121.0.6167.47
+ Release: 1%{?dist}
+ Summary: A WebKit (Blink) powered web browser that Google doesn't want you to use
+ Url: http://www.chromium.org/Home
+@@ -446,6 +446,9 @@ patch356: chromium-120-disable-FFmpegAllowLists.patch
  # remove ldflags -Wl,-mllvm,-disable-auto-upgrade-debug-info which is not supported
  Patch357: chromium-120-clang16-disable-auto-upgrade-debug-info.patch
  
@@ -64,7 +73,7 @@ index dcfcea8..f4a8501 100644
  # upstream patches
  
  # Use chromium-latest.py to generate clean tarball from released build tarballs, found here:
-@@ -1123,6 +1126,17 @@ sed -i 's/getenv("CHROME_VERSION_EXTRA")/"Fedora Project"/' chrome/common/channe
+@@ -1119,6 +1122,17 @@ sed -i 's/getenv("CHROME_VERSION_EXTRA")/"Fedora Project"/' chrome/common/channe
  # Fix hardcoded path in remoting code
  sed -i 's|/opt/google/chrome-remote-desktop|%{crd_path}|g' remoting/host/setup/daemon_controller_delegate_linux.cc
  
@@ -82,7 +91,7 @@ index dcfcea8..f4a8501 100644
  %build
  # utf8 issue on epel7, Internal parsing error 'ascii' codec can't
  # decode byte 0xe2 in position 474: ordinal not in range(128)
-@@ -1130,6 +1144,8 @@ sed -i 's|/opt/google/chrome-remote-desktop|%{crd_path}|g' remoting/host/setup/d
+@@ -1126,6 +1140,8 @@ sed -i 's|/opt/google/chrome-remote-desktop|%{crd_path}|g' remoting/host/setup/d
  export LANG=en_US.UTF-8
  %endif
  
@@ -91,7 +100,7 @@ index dcfcea8..f4a8501 100644
  # reduce warnings
  %if %{clang}
  FLAGS=' -Wno-deprecated-declarations -Wno-unknown-warning-option -Wno-unused-command-line-argument'
-@@ -1398,6 +1414,10 @@ mkdir -p %{builddir} && cp -a %{_bindir}/gn %{builddir}/
+@@ -1394,6 +1410,10 @@ mkdir -p %{builddir} && cp -a %{_bindir}/gn %{builddir}/
  %build_target %{headlessbuilddir} headless_shell
  %endif
  
