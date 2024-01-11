@@ -1,5 +1,5 @@
 diff --git a/chromium.spec b/chromium.spec
-index b37d37c..8c0ac49 100644
+index b37d37c..b7fa83e 100644
 --- a/chromium.spec
 +++ b/chromium.spec
 @@ -31,7 +31,7 @@
@@ -85,7 +85,7 @@ index b37d37c..8c0ac49 100644
  %patch -P303 -p1 -b .typename
  %patch -P304 -p1 -b .string-convert
  %patch -P306 -p1 -b .assert
-@@ -1044,11 +1047,11 @@ udev.
+@@ -1044,17 +1047,17 @@ udev.
  %endif
  %endif
  
@@ -99,6 +99,13 @@ index b37d37c..8c0ac49 100644
  
  %if %{disable_bti}
  %patch -P352 -p1 -b .workaround_for_crash_on_BTI_capable_system
+ %endif
+ 
+-%patch -P353 -p1 -b .gn-workaround-atspi
++#%patch -P353 -p1 -b .gn-workaround-atspi
+ %patch -P354 -p1 -b .revert-split-threshold-for-reg-with-hint
+ %if ! %{use_custom_libcxx}
+ %patch -P355 -p1 -b .nullptr_t-without-namespace-std
 @@ -1119,6 +1122,17 @@ sed -i 's/getenv("CHROME_VERSION_EXTRA")/"Fedora Project"/' chrome/common/channe
  # Fix hardcoded path in remoting code
  sed -i 's|/opt/google/chrome-remote-desktop|%{crd_path}|g' remoting/host/setup/daemon_controller_delegate_linux.cc
