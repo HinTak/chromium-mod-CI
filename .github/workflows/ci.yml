@@ -66,6 +66,7 @@ jobs:
       - run: rm -f ~/rpmbuild/SOURCES/chromium-*-clean.tar.xz
       - uses: actions/checkout@v4
       - uses: actions/cache/restore@v3
+        id: cache-chromium-clean
         with:
           path: |
             chromium-121.0.6167.47-clean.tar.xz
