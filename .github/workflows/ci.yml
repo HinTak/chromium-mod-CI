@@ -70,6 +70,8 @@ jobs:
           path: |
             chromium-121.0.6167.47-clean.tar.xz
           key: chromium-121.0.6167.47
+#          fail-on-cache-miss: true
+      - run: ls -lR chromium-121.0.6167.47*
       - run: mv chromium-121.0.6167.47-clean.tar.xz ~/rpmbuild/SOURCES/
       - run: patch ~/rpmbuild/SPECS/chromium.spec chromium.spec.diff
       - run: cp 000*.patch ~/rpmbuild/SOURCES/
