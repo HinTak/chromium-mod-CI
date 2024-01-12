@@ -75,6 +75,7 @@ jobs:
       - run: curl -o a.rpm https://kojipkgs.fedoraproject.org//packages/chromium/120.0.6099.216/1.fc39/src/chromium-120.0.6099.216-1.fc39.src.rpm
       - run: ls -l a.rpm
       - run: dnf builddep -y --srpm a.rpm
+      - run dnf upgrade -y clang llvm
       - run: df
       - run: rpm -ivh a.rpm
       - run: rm a.rpm
