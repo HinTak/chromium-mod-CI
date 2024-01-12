@@ -42,6 +42,7 @@ jobs:
             chromium-121.0.6167.47-clean.tar.xz
           key: chromium-121.0.6167.47
           enableCrossOsArchive: true
+      - run: pwd
       - run: ls -Rl .
       - uses: actions/checkout@v4
       - run: dnf install -y xz
