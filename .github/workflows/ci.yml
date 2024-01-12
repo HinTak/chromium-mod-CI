@@ -42,6 +42,7 @@ jobs:
             chromium-121.0.6167.47-clean.tar.xz
           key: chromium-121.0.6167.47
       - uses: actions/checkout@v4
+      - run: dnf install -y xz
       - name: Build cache
         if: ${{ steps.cache-chromium-clean.outputs.cache-hit != 'true' }}
         run: ./chromium-latest.py --version 121.0.6167.47 --ffmpegclean --ffmpegarm
