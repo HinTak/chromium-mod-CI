@@ -44,14 +44,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build cache
         if: ${{ steps.cache-chromium-clean.outputs.cache-hit != 'true' }}
-        steps:
-          - run: ./chromium-latest.py --version 121.0.6167.47 --ffmpegclean --ffmpegarm
-          - run: ls -l
-          - run: df
-          - run: rm -rf chromium-121.0.6167.47
-          - run: df
-          - run: rm -rf chromium-121.0.6167.47.tar.xz
-          - run: df
+        run: ./chromium-latest.py --version 121.0.6167.47 --ffmpegclean --ffmpegarm
 
   fedora-job:
     runs-on: ubuntu-latest
