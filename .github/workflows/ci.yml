@@ -70,7 +70,7 @@ jobs:
       - run: rm a.rpm
       - run: rm -f ~/rpmbuild/SOURCES/chromium-*-clean.tar.xz
       - uses: actions/checkout@v4
-      - uses: actions/cache/restore@v3
+      - uses: actions/cache@v3
         id: cache-chromium-clean
         with:
           path: |
