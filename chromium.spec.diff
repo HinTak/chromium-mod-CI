@@ -1,5 +1,5 @@
 diff --git a/chromium.spec b/chromium.spec
-index b37d37c..b7fa83e 100644
+index b37d37c..aeb657e 100644
 --- a/chromium.spec
 +++ b/chromium.spec
 @@ -31,7 +31,7 @@
@@ -133,6 +133,15 @@ index b37d37c..b7fa83e 100644
  # reduce warnings
  %if %{clang}
  FLAGS=' -Wno-deprecated-declarations -Wno-unknown-warning-option -Wno-unused-command-line-argument'
+@@ -1222,7 +1238,7 @@ CHROMIUM_CORE_GN_DEFINES+=' use_lld=false'
+ %endif
+ 
+ # disable rust, it's only using for testing
+-CHROMIUM_CORE_GN_DEFINES+=' enable_rust=false'
++CHROMIUM_CORE_GN_DEFINES+=' enable_rust=false enable_cxx=false enable_rust_qr=false'
+ 
+ CHROMIUM_CORE_GN_DEFINES+=' use_sysroot=false disable_fieldtrial_testing_config=true'
+ 
 @@ -1394,6 +1410,10 @@ mkdir -p %{builddir} && cp -a %{_bindir}/gn %{builddir}/
  %build_target %{headlessbuilddir} headless_shell
  %endif
