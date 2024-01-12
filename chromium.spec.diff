@@ -1,5 +1,5 @@
 diff --git a/chromium.spec b/chromium.spec
-index b37d37c..aeb657e 100644
+index b37d37c..f45b256 100644
 --- a/chromium.spec
 +++ b/chromium.spec
 @@ -31,7 +31,7 @@
@@ -142,7 +142,16 @@ index b37d37c..aeb657e 100644
  
  CHROMIUM_CORE_GN_DEFINES+=' use_sysroot=false disable_fieldtrial_testing_config=true'
  
-@@ -1394,6 +1410,10 @@ mkdir -p %{builddir} && cp -a %{_bindir}/gn %{builddir}/
+@@ -1379,6 +1395,8 @@ tools/gn/bootstrap/bootstrap.py --gn-gen-args="$CHROMIUM_CORE_GN_DEFINES $CHROMI
+ mkdir -p %{builddir} && cp -a %{_bindir}/gn %{builddir}/
+ %endif
+ 
++perl -pi -e 's(^.+components/qr_code_generator:unit_tests.+$)()' components/BUILD.gn
++
+ %{builddir}/gn --script-executable=%{chromium_pybin} gen --args="$CHROMIUM_CORE_GN_DEFINES $CHROMIUM_BROWSER_GN_DEFINES" %{builddir}
+ 
+ %if %{build_headless}
+@@ -1394,6 +1412,10 @@ mkdir -p %{builddir} && cp -a %{_bindir}/gn %{builddir}/
  %build_target %{headlessbuilddir} headless_shell
  %endif
  
