@@ -41,6 +41,7 @@ jobs:
           path: |
             chromium-121.0.6167.47-clean.tar.xz
           key: chromium-121.0.6167.47
+          enableCrossOsArchive: true
       - uses: actions/checkout@v4
       - run: dnf install -y xz
       - name: Build cache
@@ -64,7 +65,6 @@ jobs:
       - run: rpm -ivh a.rpm
       - run: rm a.rpm
       - run: rm -f ~/rpmbuild/SOURCES/chromium-*-clean.tar.xz
-      - uses: actions/checkout@v4
       - uses: actions/cache@v3
         id: cache-chromium-clean
         with:
@@ -72,6 +72,8 @@ jobs:
             chromium-121.0.6167.47-clean.tar.xz
           key: chromium-121.0.6167.47
           fail-on-cache-miss: true
+          enableCrossOsArchive: true
+      - uses: actions/checkout@v4
       - run: ls -lR chromium-121.0.6167.47*
       - run: cp -p chromium-121.0.6167.47-clean.tar.xz ~/rpmbuild/SOURCES/
       - run: patch ~/rpmbuild/SPECS/chromium.spec chromium.spec.diff
