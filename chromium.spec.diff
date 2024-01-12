@@ -138,7 +138,7 @@ index b37d37c..aeb657e 100644
  
  # disable rust, it's only using for testing
 -CHROMIUM_CORE_GN_DEFINES+=' enable_rust=false'
-+CHROMIUM_CORE_GN_DEFINES+=' enable_rust=false enable_cxx=false enable_rust_qr=false'
++CHROMIUM_CORE_GN_DEFINES+=' enable_rust=false enable_rust_qr=false'
  
  CHROMIUM_CORE_GN_DEFINES+=' use_sysroot=false disable_fieldtrial_testing_config=true'
  
