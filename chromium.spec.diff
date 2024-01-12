@@ -1,5 +1,5 @@
 diff --git a/chromium.spec b/chromium.spec
-index b37d37c..34f0e02 100644
+index b37d37c..816d18c 100644
 --- a/chromium.spec
 +++ b/chromium.spec
 @@ -31,7 +31,7 @@
@@ -58,7 +58,7 @@ index b37d37c..34f0e02 100644
  %endif
  
  Name:	chromium%{chromium_channel}
--Version: 120.0.6099.199
+-Version: 120.0.6099.216
 +Version: 121.0.6167.47
  Release: 1%{?dist}
  Summary: A WebKit (Blink) powered web browser that Google doesn't want you to use
@@ -142,17 +142,18 @@ index b37d37c..34f0e02 100644
  
  CHROMIUM_CORE_GN_DEFINES+=' use_sysroot=false disable_fieldtrial_testing_config=true'
  
-@@ -1379,6 +1395,9 @@ tools/gn/bootstrap/bootstrap.py --gn-gen-args="$CHROMIUM_CORE_GN_DEFINES $CHROMI
+@@ -1379,6 +1395,10 @@ tools/gn/bootstrap/bootstrap.py --gn-gen-args="$CHROMIUM_CORE_GN_DEFINES $CHROMI
  mkdir -p %{builddir} && cp -a %{_bindir}/gn %{builddir}/
  %endif
  
 +perl -pi -e 's(^.+components/qr_code_generator:unit_tests.+$)()' components/BUILD.gn
 +perl -pi -e 's(^.+components/qr_code_generator:qr_code_generator_features.+$)()' chrome/services/qrcode_generator/public/cpp/BUILD.gn
++perl -pi -e 's(^.+components/qr_code_generator.+$)()' chrome/services/qrcode_generator/BUILD.gn
 +
  %{builddir}/gn --script-executable=%{chromium_pybin} gen --args="$CHROMIUM_CORE_GN_DEFINES $CHROMIUM_BROWSER_GN_DEFINES" %{builddir}
  
  %if %{build_headless}
-@@ -1394,6 +1413,10 @@ mkdir -p %{builddir} && cp -a %{_bindir}/gn %{builddir}/
+@@ -1394,6 +1414,10 @@ mkdir -p %{builddir} && cp -a %{_bindir}/gn %{builddir}/
  %build_target %{headlessbuilddir} headless_shell
  %endif
  
