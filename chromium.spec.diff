@@ -1,5 +1,5 @@
 diff --git a/chromium.spec b/chromium.spec
-index b37d37c..10074f2 100644
+index b37d37c..9039d1b 100644
 --- a/chromium.spec
 +++ b/chromium.spec
 @@ -31,7 +31,7 @@
@@ -96,7 +96,7 @@ index b37d37c..10074f2 100644
  %patch -P304 -p1 -b .string-convert
  %patch -P306 -p1 -b .assert
  %endif
-@@ -1044,17 +1047,17 @@ udev.
+@@ -1044,23 +1047,23 @@ udev.
  %endif
  %endif
  
@@ -117,6 +117,13 @@ index b37d37c..10074f2 100644
  %patch -P354 -p1 -b .revert-split-threshold-for-reg-with-hint
  %if ! %{use_custom_libcxx}
  %patch -P355 -p1 -b .nullptr_t-without-namespace-std
+ %endif
+ %patch -P356 -p1 -b .disable-FFmpegAllowLists
+-%patch -P357 -p1 -b .clang16-disable-auto-upgrade-debug-info
++#%patch -P357 -p1 -b .clang16-disable-auto-upgrade-debug-info
+ 
+ # Change shebang in all relevant files in this directory and all subdirectories
+ # See `man find` for how the `-exec command {} +` syntax works
 @@ -1119,6 +1122,17 @@ sed -i 's/getenv("CHROME_VERSION_EXTRA")/"Fedora Project"/' chrome/common/channe
  # Fix hardcoded path in remoting code
  sed -i 's|/opt/google/chrome-remote-desktop|%{crd_path}|g' remoting/host/setup/daemon_controller_delegate_linux.cc
