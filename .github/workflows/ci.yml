@@ -83,6 +83,7 @@ jobs:
       - run: cp -p chromium-121.0.6167.47-clean.tar.xz ~/rpmbuild/SOURCES/
       - run: patch ~/rpmbuild/SPECS/chromium.spec chromium.spec.diff
       - run: cp 000*.patch ~/rpmbuild/SOURCES/
+      - run: cp github.com/chromium/chromium/commit/*.patch ~/rpmbuild/SOURCES/
 #      - run: pushd ~/rpmbuild/SPECS/ && rpmbuild -bp chromium.spec && popd
 #      - run: find ~/rpmbuild/BUILD -type d -name 'third_*' -print -exec ls -l {} \;
 #      - run: find ~/rpmbuild/BUILD -depth -type d -name 'third_*' -exec du {} \;

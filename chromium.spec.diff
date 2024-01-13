@@ -63,10 +63,11 @@ index b37d37c..747b446 100644
  Release: 1%{?dist}
  Summary: A WebKit (Blink) powered web browser that Google doesn't want you to use
  Url: http://www.chromium.org/Home
-@@ -446,6 +446,9 @@ patch356: chromium-120-disable-FFmpegAllowLists.patch
+@@ -446,6 +446,10 @@ patch356: chromium-120-disable-FFmpegAllowLists.patch
  # remove ldflags -Wl,-mllvm,-disable-auto-upgrade-debug-info which is not supported
  Patch357: chromium-120-clang16-disable-auto-upgrade-debug-info.patch
  
++Patch999: 84d1d7adcd1697348e3f821811179c525d3b5717.patch
 +Patch1000: 0001-m121-OT-SVG-hook.patch
 +Patch1001: 0002-m121-use-FreeType-for-non-Linux-OT-SVG-support.patch
 +
@@ -106,7 +107,7 @@ index b37d37c..747b446 100644
  %patch -P354 -p1 -b .revert-split-threshold-for-reg-with-hint
  %if ! %{use_custom_libcxx}
  %patch -P355 -p1 -b .nullptr_t-without-namespace-std
-@@ -1119,6 +1122,17 @@ sed -i 's/getenv("CHROME_VERSION_EXTRA")/"Fedora Project"/' chrome/common/channe
+@@ -1119,6 +1122,18 @@ sed -i 's/getenv("CHROME_VERSION_EXTRA")/"Fedora Project"/' chrome/common/channe
  # Fix hardcoded path in remoting code
  sed -i 's|/opt/google/chrome-remote-desktop|%{crd_path}|g' remoting/host/setup/daemon_controller_delegate_linux.cc
  
@@ -118,6 +119,7 @@ index b37d37c..747b446 100644
 +tar -czpf ${GITHUB_WORKSPACE}/before.tgz skia third_party/ots third_party/skia third_party/blink/renderer/platform
 +ls -l ${GITHUB_WORKSPACE}/before.tgz
 +
++%patch -P999 -R -p1 -b .ffmpeg-breakage
 +%patch -P1000 -p1 -b .ot-svg1
 +%patch -P1001 -p1 -b .ot-svg2
 +
