@@ -40,8 +40,8 @@ jobs:
         id: cache-chromium-clean
         with:
           path: |
-            chromium-122.0.6226.2-clean.tar.xz
-          key: chromium-122.0.6226.2
+            chromium-121.0.6167.47-clean.tar.xz
+          key: chromium-121.0.6167.47
           enableCrossOsArchive: true
       - run: pwd
       - run: ls -Rl .
@@ -50,7 +50,7 @@ jobs:
       - run: ls -lR .
       - name: Build cache
         if: ${{ steps.cache-chromium-clean.outputs.cache-hit != 'true' }}
-        run: ./chromium-latest.py --version 122.0.6226.2 --ffmpegclean --ffmpegarm
+        run: ./chromium-latest.py --version 121.0.6167.47 --ffmpegclean --ffmpegarm
 
   fedora-job:
     runs-on: ubuntu-latest
@@ -64,11 +64,11 @@ jobs:
         id: cache-chromium-clean
         with:
           path: |
-            chromium-122.0.6226.2-clean.tar.xz
-          key: chromium-122.0.6226.2
+            chromium-121.0.6167.47-clean.tar.xz
+          key: chromium-121.0.6167.47
           enableCrossOsArchive: true
       - run: ls -Rl .
-      - run: ls -lR chromium-122.0.6226.2*
+      - run: ls -lR chromium-121.0.6167.47*
       - run: cat /etc/os-release
       - run: df
       - run: dnf install -y curl dnf-utils rpm-build
@@ -80,7 +80,7 @@ jobs:
       - run: rpm -ivh a.rpm
       - run: rm a.rpm
       - run: rm -f ~/rpmbuild/SOURCES/chromium-*-clean.tar.xz
-      - run: cp -p chromium-122.0.6226.2-clean.tar.xz ~/rpmbuild/SOURCES/
+      - run: cp -p chromium-121.0.6167.47-clean.tar.xz ~/rpmbuild/SOURCES/
       - run: patch ~/rpmbuild/SPECS/chromium.spec chromium.spec.diff
       - run: cp 000*.patch ~/rpmbuild/SOURCES/
 #      - run: pushd ~/rpmbuild/SPECS/ && rpmbuild -bp chromium.spec && popd

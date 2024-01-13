@@ -289,7 +289,7 @@
 %endif
 
 Name:	chromium%{chromium_channel}
-Version: 122.0.6226.2
+Version: 121.0.6167.47
 Release: 1%{?dist}
 Summary: A WebKit (Blink) powered web browser that Google doesn't want you to use
 Url: http://www.chromium.org/Home
