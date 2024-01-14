@@ -283,7 +283,7 @@ index 3c97e4a6cf4c78..a55e4ab51d5b35 100644
 +        type.codec = VideoCodec::kDolbyVision;
 +        type.level = dovi->dv_level;
 +        type.color_space = color_space;
-+        type.hdr_metadata_type = gfx::HdrMetadataType::kSmpteSt2094_10;
++        type.hdr_metadata_type = gfx::HdrMetadataType::kNone;
 +        switch (dovi->dv_profile) {
 +          case 0:
 +            type.profile = VideoCodecProfile::DOLBYVISION_PROFILE0;
@@ -317,8 +317,8 @@ index 3c97e4a6cf4c78..a55e4ab51d5b35 100644
 +        break;
 +      }
  #endif  // BUILDFLAG(ENABLE_PLATFORM_DOLBY_VISION)
-         default:
-           break;
+       default:
+         break;
 -      }
      }
    }
