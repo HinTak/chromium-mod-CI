@@ -19,7 +19,8 @@ The patches are logically in 3 parts, but in 2 files:
 - a one-line hook to connect Skia's SVG module with the skia's FreeType font manager. It only needs to be done once. In Skia Python, it is done at
 [python module loading time](https://github.com/kyamagu/skia-python/commit/e5f2e6361d0e6a40e5077fa46897a556f793a18d), although the earlier work to
 [test and set just before it is needed](https://github.com/kyamagu/skia-python/commit/9039fbd0848b63070ef1b7392ab7d546de125622) is gauranteed to work,
-at the risk of doing unnessary work multiple times. Here I do both, as I am not sure `skia/ext/fontmgr_default_linux.cc` is the only entry point.
+at the risk of doing unnessary work multiple times. Here I do both, as I am not sure `skia/ext/fontmgr_default_linux.cc`
+(or `skia/ext/font_utils.cc` in m122 onwards) is the only entry point.
 Somebody more knowledgeable might be able to indicate a better location otherwise. Plus some changes to the skia build script to include the
 optional svg module and what it depends on.
 
