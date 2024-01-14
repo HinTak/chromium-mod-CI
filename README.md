@@ -101,3 +101,9 @@ obj/third_party/blink/renderer/platform/libblink_platform.a
 [third_party/blink/renderer/platform:21118/23003] CXX obj/third_party/blink/renderer/platform/platform/web_font_typeface_factory.o
 [third_party/blink/renderer/platform:21121/23003] CXX obj/third_party/blink/renderer/platform/platform/web_font_decoder.o
 ```
+
+```
+[third_party/blink/renderer/platform:6105/23237] CXX obj/third_party/ots/ots/ots.o
+[third_party/blink/renderer/platform:8267/23237] CXX obj/skia/skia/font_utils.o
+[third_party/blink/renderer/platform:8466/23237] CXX obj/skia/skia/SkFontHost_FreeType.o
+```
