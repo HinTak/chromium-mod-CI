@@ -1,0 +1,1079 @@
+diff --git a/media/base/supported_types.cc b/media/base/supported_types.cc
+index e789456e870890..1360ee1bfb46dc 100644
+--- a/media/base/supported_types.cc
++++ b/media/base/supported_types.cc
+@@ -80,10 +80,9 @@ bool IsSupportedHdrMetadata(const VideoType& type) {
+       return type.color_space.transfer ==
+              VideoColorSpace::TransferID::SMPTEST2084;
+ 
++    // 2094-10 SEI metadata is not the same as Dolby Vision RPU metadata, Dolby
++    // Vision decoders on each platform only support Dolby Vision RPU metadata.
+     case gfx::HdrMetadataType::kSmpteSt2094_10:
+-#if BUILDFLAG(ENABLE_PLATFORM_DOLBY_VISION)
+-      return type.codec == VideoCodec::kDolbyVision;
+-#endif
+     case gfx::HdrMetadataType::kSmpteSt2094_40:
+       return false;
+   }
+diff --git a/media/base/supported_types_unittest.cc b/media/base/supported_types_unittest.cc
+index 6db0668b0d51d4..63b66aac053ce6 100644
+--- a/media/base/supported_types_unittest.cc
++++ b/media/base/supported_types_unittest.cc
+@@ -345,18 +345,10 @@ TEST(SupportedTypesTest, IsSupportedVideoTypeWithHdrMetadataBasics) {
+       IsSupportedVideoType({VideoCodec::kVP8, VP8PROFILE_ANY, kUnspecifiedLevel,
+                             color_space, gfx::HdrMetadataType::kSmpteSt2086}));
+ 
+-  // Dolby vision metadata is not supported if the codec is not dolby vision.
+-  EXPECT_FALSE(IsSupportedVideoType({VideoCodec::kVP8, VP8PROFILE_ANY,
+-                                     kUnspecifiedLevel, color_space,
+-                                     gfx::HdrMetadataType::kSmpteSt2094_10}));
+-
+-#if !BUILDFLAG(ENABLE_PLATFORM_DOLBY_VISION)
+-  // Dolby vision metadata maybe is supported if buildflag is enabled and
+-  // platform declare it's support.
++  // ST2094-10 metadata is not supported even if the codec is dolby vision.
+   EXPECT_FALSE(IsSupportedVideoType(
+       {VideoCodec::kDolbyVision, DOLBYVISION_PROFILE5, kUnspecifiedLevel,
+        color_space, gfx::HdrMetadataType::kSmpteSt2094_10}));
+-#endif  // !BUILDFLAG(ENABLE_PLATFORM_DOLBY_VISION)
+ 
+   EXPECT_FALSE(IsSupportedVideoType({VideoCodec::kVP8, VP8PROFILE_ANY,
+                                      kUnspecifiedLevel, color_space,
+diff --git a/media/ffmpeg/ffmpeg_common.cc b/media/ffmpeg/ffmpeg_common.cc
+index a55e4ab51d5b35..6049c6edb6a1ff 100644
+--- a/media/ffmpeg/ffmpeg_common.cc
++++ b/media/ffmpeg/ffmpeg_common.cc
+@@ -762,7 +762,7 @@ bool AVStreamToVideoDecoderConfig(const AVStream* stream,
+         type.codec = VideoCodec::kDolbyVision;
+         type.level = dovi->dv_level;
+         type.color_space = color_space;
+-        type.hdr_metadata_type = gfx::HdrMetadataType::kSmpteSt2094_10;
++        type.hdr_metadata_type = gfx::HdrMetadataType::kNone;
+         switch (dovi->dv_profile) {
+           case 0:
+             type.profile = VideoCodecProfile::DOLBYVISION_PROFILE0;
+@@ -796,8 +796,8 @@ bool AVStreamToVideoDecoderConfig(const AVStream* stream,
+         break;
+       }
+ #endif  // BUILDFLAG(ENABLE_PLATFORM_DOLBY_VISION)
+-        default:
+-          break;
++      default:
++        break;
+     }
+   }
+ 
+diff --git a/media/filters/stream_parser_factory.cc b/media/filters/stream_parser_factory.cc
+index f50051f238596d..9855735611e80a 100644
+--- a/media/filters/stream_parser_factory.cc
++++ b/media/filters/stream_parser_factory.cc
+@@ -374,6 +374,7 @@ static StreamParser* BuildMP4Parser(base::span<const std::string> codecs,
+                                     MediaLog* media_log) {
+   std::set<int> audio_object_types;
+   bool has_sbr = false;
++  bool has_dv = false;
+ 
+   // The draft version 0.0.4 FLAC-in-ISO spec
+   // (https://github.com/xiph/flac/blob/master/doc/isoflac.txt) does not define
+@@ -401,6 +402,18 @@ static StreamParser* BuildMP4Parser(base::span<const std::string> codecs,
+         has_sbr = true;
+         break;
+       }
++#if BUILDFLAG(ENABLE_PLATFORM_DOLBY_VISION)
++    } else if (base::MatchPattern(codec_id,
++                                  kDolbyVisionAVCCodecInfo1.pattern) ||
++               base::MatchPattern(codec_id, kDolbyVisionAVCCodecInfo2.pattern)
++#if BUILDFLAG(ENABLE_PLATFORM_HEVC)
++               || base::MatchPattern(codec_id,
++                                     kDolbyVisionHEVCCodecInfo1.pattern) ||
++               base::MatchPattern(codec_id, kDolbyVisionHEVCCodecInfo2.pattern)
++#endif  // BUILDFLAG(ENABLE_PLATFORM_HEVC)
++    ) {
++      has_dv = true;
++#endif  // BUILDFLAG(ENABLE_PLATFORM_DOLBY_VISION)
+ #if BUILDFLAG(ENABLE_PLATFORM_AC3_EAC3_AUDIO)
+     } else if (base::MatchPattern(codec_id, kAC3CodecInfo1.pattern) ||
+                base::MatchPattern(codec_id, kAC3CodecInfo2.pattern) ||
+@@ -438,7 +451,8 @@ static StreamParser* BuildMP4Parser(base::span<const std::string> codecs,
+     }
+   }
+ 
+-  return new mp4::MP4StreamParser(audio_object_types, has_sbr, has_flac);
++  return new mp4::MP4StreamParser(audio_object_types, has_sbr, has_flac,
++                                  has_dv);
+ }
+ #if BUILDFLAG(USE_PROPRIETARY_CODECS)
+ static const CodecInfo kADTSCodecInfo = {nullptr, CodecInfo::AUDIO, nullptr,
+diff --git a/media/formats/BUILD.gn b/media/formats/BUILD.gn
+index 906f18db0c147e..5e3762ee640558 100644
+--- a/media/formats/BUILD.gn
++++ b/media/formats/BUILD.gn
+@@ -97,6 +97,8 @@ source_set("formats") {
+       "mp4/aac.h",
+       "mp4/avc.cc",
+       "mp4/avc.h",
++      "mp4/dolby_vision.cc",
++      "mp4/dolby_vision.h",
+       "mp4/h264_annex_b_to_avc_bitstream_converter.cc",
+       "mp4/h264_annex_b_to_avc_bitstream_converter.h",
+       "mp4/mp4_status.h",
+@@ -128,13 +130,6 @@ source_set("formats") {
+     }
+   }
+ 
+-  if (proprietary_codecs && enable_platform_dolby_vision) {
+-    sources += [
+-      "mp4/dolby_vision.cc",
+-      "mp4/dolby_vision.h",
+-    ]
+-  }
+-
+   if (enable_platform_dts_audio) {
+     sources += [
+       "dts/dts_stream_parser.cc",
+@@ -313,6 +308,7 @@ source_set("unit_tests") {
+       "mp4/aac_unittest.cc",
+       "mp4/avc_unittest.cc",
+       "mp4/box_reader_unittest.cc",
++      "mp4/dolby_vision_unittest.cc",
+       "mp4/es_descriptor_unittest.cc",
+       "mp4/h264_annex_b_to_avc_bitstream_converter_unittest.cc",
+       "mp4/mp4_stream_parser_unittest.cc",
+@@ -353,10 +349,6 @@ source_set("unit_tests") {
+       ]
+     }
+ 
+-    if (enable_platform_dolby_vision) {
+-      sources += [ "mp4/dolby_vision_unittest.cc" ]
+-    }
+-
+     if (enable_platform_hevc) {
+       sources += [ "mp4/hevc_unittest.cc" ]
+ 
+diff --git a/media/formats/mp4/box_definitions.cc b/media/formats/mp4/box_definitions.cc
+index 5546fd540efe85..7bf4d5a3c2a5b5 100644
+--- a/media/formats/mp4/box_definitions.cc
++++ b/media/formats/mp4/box_definitions.cc
+@@ -24,12 +24,9 @@
+ 
+ #if BUILDFLAG(USE_PROPRIETARY_CODECS)
+ #include "media/formats/mp4/avc.h"
+-#include "media/video/h264_parser.h"  // nogncheck
+-
+-#if BUILDFLAG(ENABLE_PLATFORM_DOLBY_VISION)
+ #include "media/formats/mp4/dolby_vision.h"
++#include "media/video/h264_parser.h"  // nogncheck
+ #include "third_party/abseil-cpp/absl/types/optional.h"
+-#endif  // BUILDFLAG(ENABLE_PLATFORM_DOLBY_VISION)
+ 
+ #if BUILDFLAG(ENABLE_PLATFORM_HEVC)
+ #include "media/formats/mp4/hevc.h"
+@@ -44,29 +41,51 @@ namespace {
+ const size_t kKeyIdSize = 16;
+ const size_t kFlacMetadataBlockStreaminfoSize = 34;
+ 
+-#if BUILDFLAG(ENABLE_PLATFORM_DOLBY_VISION)
+-// Parse dvcC or dvvC box.
+-absl::optional<DOVIDecoderConfigurationRecord> ParseDOVIConfig(
+-    BoxReader* reader) {
++#if BUILDFLAG(USE_PROPRIETARY_CODECS)
++// Try to parse dvcC or dvvC box if exists, return `video_info` and an optional
++// `dv_info` based on the configuration.
++std::tuple<CodecProfileLevel, absl::optional<CodecProfileLevel>> MaybeParseDOVI(
++    BoxReader* reader,
++    CodecProfileLevel video_info) {
++  absl::optional<DOVIDecoderConfigurationRecord> dovi_config;
++
+   {
+     DolbyVisionConfiguration dvcc;
+     if (reader->HasChild(&dvcc) && reader->ReadChild(&dvcc)) {
++      DVLOG(2) << __func__ << " reading DolbyVisionConfiguration (dvcC)";
+       DCHECK_LE(dvcc.dovi_config.dv_profile, 7);
+-      return dvcc.dovi_config;
++      dovi_config = dvcc.dovi_config;
+     }
+   }
+ 
+   {
+     DolbyVisionConfiguration8 dvvc;
+     if (reader->HasChild(&dvvc) && reader->ReadChild(&dvvc)) {
++      DVLOG(2) << __func__ << " reading DolbyVisionConfiguration (dvvC)";
+       DCHECK_GT(dvvc.dovi_config.dv_profile, 7);
+-      return dvvc.dovi_config;
++      dovi_config = dvvc.dovi_config;
+     }
+   }
+ 
+-  return absl::nullopt;
++  if (!dovi_config.has_value()) {
++    return {video_info, absl::nullopt};
++  }
++
++  constexpr int kHDR10CompatibilityId = 1;
++  constexpr int kSDRCompatibilityId = 2;
++  constexpr int kHLGCompatibilityId = 4;
++  CodecProfileLevel dv_info = {VideoCodec::kDolbyVision,
++                               dovi_config->codec_profile,
++                               dovi_config->dv_level};
++  if (dovi_config->dv_bl_signal_compatibility_id == kHDR10CompatibilityId ||
++      dovi_config->dv_bl_signal_compatibility_id == kSDRCompatibilityId ||
++      dovi_config->dv_bl_signal_compatibility_id == kHLGCompatibilityId) {
++    return {video_info, dv_info};
++  }
++  // If the buffer is not backward compatible, always treat it as Dolby Vision.
++  return {dv_info, absl::nullopt};
+ }
+-#endif  // BUILDFLAG(ENABLE_PLATFORM_DOLBY_VISION)
++#endif  // BUILDFLAG(USE_PROPRIETARY_CODECS)
+ 
+ // Read color coordinate value as defined in the MasteringDisplayColorVolume
+ // ('mdcv') box.  Each coordinate is a float encoded in uint16_t, with upper
+@@ -1149,9 +1168,8 @@ VideoSampleEntry::VideoSampleEntry()
+       width(0),
+       height(0),
+       alpha_mode(VideoDecoderConfig::AlphaMode::kIsOpaque),
+-      video_codec(VideoCodec::kUnknown),
+-      video_codec_profile(VIDEO_CODEC_PROFILE_UNKNOWN),
+-      video_codec_level(kNoVideoCodecLevel) {}
++      video_info({VideoCodec::kUnknown, VIDEO_CODEC_PROFILE_UNKNOWN,
++                  kNoVideoCodecLevel}) {}
+ 
+ VideoSampleEntry::VideoSampleEntry(const VideoSampleEntry& other) = default;
+ 
+@@ -1204,109 +1222,84 @@ bool VideoSampleEntry::Parse(BoxReader* reader) {
+     case FOURCC_AVC1:
+     case FOURCC_AVC3: {
+       DVLOG(2) << __func__ << " reading AVCDecoderConfigurationRecord (avcC)";
+-      std::unique_ptr<AVCDecoderConfigurationRecord> avcConfig(
++      std::unique_ptr<AVCDecoderConfigurationRecord> avc_config(
+           new AVCDecoderConfigurationRecord());
+-      RCHECK(reader->ReadChild(avcConfig.get()));
+-      video_codec = VideoCodec::kH264;
+-      video_codec_profile = H264Parser::ProfileIDCToVideoCodecProfile(
+-          avcConfig->profile_indication);
+-
++      RCHECK(reader->ReadChild(avc_config.get()));
++      video_info.codec = VideoCodec::kH264;
++      video_info.profile = H264Parser::ProfileIDCToVideoCodecProfile(
++          avc_config->profile_indication);
++      // It can be Dolby Vision stream if there is dvvC box.
++      std::tie(video_info, dv_info) = MaybeParseDOVI(reader, video_info);
+       frame_bitstream_converter =
+-          base::MakeRefCounted<AVCBitstreamConverter>(std::move(avcConfig));
+-#if BUILDFLAG(ENABLE_PLATFORM_DOLBY_VISION)
+-      // It can be Dolby Vision stream if there is DVCC box.
+-      auto dv_config = ParseDOVIConfig(reader);
+-      if (dv_config.has_value()) {
+-        DVLOG(2) << __func__ << " reading DolbyVisionConfiguration (dvcC/dvvC)";
+-        video_codec = VideoCodec::kDolbyVision;
+-        video_codec_profile = dv_config->codec_profile;
+-        video_codec_level = dv_config->dv_level;
+-      }
+-#endif  // BUILDFLAG(ENABLE_PLATFORM_DOLBY_VISION)
++          base::MakeRefCounted<AVCBitstreamConverter>(std::move(avc_config));
+       break;
+     }
+ #if BUILDFLAG(ENABLE_PLATFORM_HEVC)
+     case FOURCC_HEV1:
+     case FOURCC_HVC1: {
+-      DVLOG(2) << __func__ << " parsing HEVCDecoderConfigurationRecord (hvcC)";
+-      std::unique_ptr<HEVCDecoderConfigurationRecord> hevcConfig(
++      DVLOG(2) << __func__ << " reading HEVCDecoderConfigurationRecord (hvcC)";
++      std::unique_ptr<HEVCDecoderConfigurationRecord> hevc_config(
+           new HEVCDecoderConfigurationRecord());
+-      RCHECK(reader->ReadChild(hevcConfig.get()));
+-      video_codec = VideoCodec::kHEVC;
+-      video_codec_profile = hevcConfig->GetVideoProfile();
++      RCHECK(reader->ReadChild(hevc_config.get()));
+ #if BUILDFLAG(ENABLE_HEVC_PARSER_AND_HW_DECODER)
+-      video_color_space = hevcConfig->GetColorSpace();
+-      hdr_metadata = hevcConfig->GetHDRMetadata();
+-      alpha_mode = hevcConfig->GetAlphaMode();
++      video_color_space = hevc_config->GetColorSpace();
++      hdr_metadata = hevc_config->GetHDRMetadata();
++      alpha_mode = hevc_config->GetAlphaMode();
+ #endif  // BUILDFLAG(ENABLE_HEVC_PARSER_AND_HW_DECODER)
++      video_info.codec = VideoCodec::kHEVC;
++      video_info.profile = hevc_config->GetVideoProfile();
++      // It can be Dolby Vision stream if there is dvcC/dvvC box.
++      std::tie(video_info, dv_info) = MaybeParseDOVI(reader, video_info);
+       frame_bitstream_converter =
+-          base::MakeRefCounted<HEVCBitstreamConverter>(std::move(hevcConfig));
+-#if BUILDFLAG(ENABLE_PLATFORM_DOLBY_VISION)
+-      // It can be Dolby Vision stream if there is DVCC box.
+-      auto dv_config = ParseDOVIConfig(reader);
+-      if (dv_config.has_value()) {
+-        DVLOG(2) << __func__ << " reading DolbyVisionConfiguration (dvcC/dvvC)";
+-        video_codec = VideoCodec::kDolbyVision;
+-        video_codec_profile = dv_config->codec_profile;
+-        video_codec_level = dv_config->dv_level;
+-      }
+-#endif  // BUILDFLAG(ENABLE_PLATFORM_DOLBY_VISION)
++          base::MakeRefCounted<HEVCBitstreamConverter>(std::move(hevc_config));
+       break;
+     }
+ #endif  // BUILDFLAG(ENABLE_PLATFORM_HEVC)
+-#if BUILDFLAG(ENABLE_PLATFORM_DOLBY_VISION)
+     case FOURCC_DVA1:
+     case FOURCC_DVAV: {
+       DVLOG(2) << __func__ << " reading AVCDecoderConfigurationRecord (avcC)";
+-      std::unique_ptr<AVCDecoderConfigurationRecord> avcConfig(
++      std::unique_ptr<AVCDecoderConfigurationRecord> avc_config(
+           new AVCDecoderConfigurationRecord());
+-      RCHECK(reader->ReadChild(avcConfig.get()));
++      RCHECK(reader->ReadChild(avc_config.get()));
++      video_info.codec = VideoCodec::kH264;
++      video_info.profile = H264Parser::ProfileIDCToVideoCodecProfile(
++          avc_config->profile_indication);
++      std::tie(video_info, dv_info) = MaybeParseDOVI(reader, video_info);
+       frame_bitstream_converter =
+-          base::MakeRefCounted<AVCBitstreamConverter>(std::move(avcConfig));
+-
+-      DVLOG(2) << __func__ << " reading DolbyVisionConfiguration (dvcC/dvvC)";
+-      auto dv_config = ParseDOVIConfig(reader);
+-      RCHECK(dv_config.has_value());
+-      video_codec = VideoCodec::kDolbyVision;
+-      video_codec_profile = dv_config->codec_profile;
+-      video_codec_level = dv_config->dv_level;
++          base::MakeRefCounted<AVCBitstreamConverter>(std::move(avc_config));
+       break;
+     }
+ #if BUILDFLAG(ENABLE_PLATFORM_HEVC)
+     case FOURCC_DVH1:
+     case FOURCC_DVHE: {
+       DVLOG(2) << __func__ << " reading HEVCDecoderConfigurationRecord (hvcC)";
+-      std::unique_ptr<HEVCDecoderConfigurationRecord> hevcConfig(
++      std::unique_ptr<HEVCDecoderConfigurationRecord> hevc_config(
+           new HEVCDecoderConfigurationRecord());
+-      RCHECK(reader->ReadChild(hevcConfig.get()));
++      RCHECK(reader->ReadChild(hevc_config.get()));
+ #if BUILDFLAG(ENABLE_HEVC_PARSER_AND_HW_DECODER)
+-      video_color_space = hevcConfig->GetColorSpace();
+-      hdr_metadata = hevcConfig->GetHDRMetadata();
+-      alpha_mode = hevcConfig->GetAlphaMode();
++      video_color_space = hevc_config->GetColorSpace();
++      hdr_metadata = hevc_config->GetHDRMetadata();
++      alpha_mode = hevc_config->GetAlphaMode();
+ #endif  // BUILDFLAG(ENABLE_HEVC_PARSER_AND_HW_DECODER)
++      video_info.codec = VideoCodec::kHEVC;
++      video_info.profile = hevc_config->GetVideoProfile();
++      std::tie(video_info, dv_info) = MaybeParseDOVI(reader, video_info);
+       frame_bitstream_converter =
+-          base::MakeRefCounted<HEVCBitstreamConverter>(std::move(hevcConfig));
+-      DVLOG(2) << __func__ << " reading DolbyVisionConfiguration (dvcC/dvvC)";
+-      auto dv_config = ParseDOVIConfig(reader);
+-      RCHECK(dv_config.has_value());
+-      video_codec = VideoCodec::kDolbyVision;
+-      video_codec_profile = dv_config->codec_profile;
+-      video_codec_level = dv_config->dv_level;
++          base::MakeRefCounted<HEVCBitstreamConverter>(std::move(hevc_config));
+       break;
+     }
+ #endif  // BUILDFLAG(ENABLE_PLATFORM_HEVC)
+-#endif  // BUILDFLAG(ENABLE_PLATFORM_DOLBY_VISION)
+ #endif  // BUILDFLAG(USE_PROPRIETARY_CODECS)
+     case FOURCC_VP09: {
+-      DVLOG(2) << __func__ << " parsing VPCodecConfigurationRecord (vpcC)";
++      DVLOG(2) << __func__ << " reading VPCodecConfigurationRecord (vpcC)";
+       std::unique_ptr<VPCodecConfigurationRecord> vp_config(
+           new VPCodecConfigurationRecord());
+       RCHECK(reader->ReadChild(vp_config.get()));
+-      frame_bitstream_converter = nullptr;
+-      video_codec = VideoCodec::kVP9;
+-      video_codec_profile = vp_config->profile;
++      video_info.codec = VideoCodec::kVP9;
++      video_info.profile = vp_config->profile;
++      video_info.level = vp_config->level;
+       video_color_space = vp_config->color_space;
+-      video_codec_level = vp_config->level;
++      frame_bitstream_converter = nullptr;
+ 
+       SMPTE2086MasteringDisplayMetadataBox color_volume;
+       if (reader->HasChild(&color_volume)) {
+@@ -1326,12 +1319,12 @@ bool VideoSampleEntry::Parse(BoxReader* reader) {
+     }
+ #if BUILDFLAG(ENABLE_AV1_DECODER)
+     case FOURCC_AV01: {
+-      DVLOG(2) << __func__ << " reading AV1 configuration.";
++      DVLOG(2) << __func__ << " reading AV1CodecConfigurationRecord (av1C)";
+       AV1CodecConfigurationRecord av1_config;
+       RCHECK(reader->ReadChild(&av1_config));
++      video_info.codec = VideoCodec::kAV1;
++      video_info.profile = av1_config.profile;
+       frame_bitstream_converter = nullptr;
+-      video_codec = VideoCodec::kAV1;
+-      video_codec_profile = av1_config.profile;
+       break;
+     }
+ #endif
+@@ -1371,7 +1364,7 @@ bool VideoSampleEntry::Parse(BoxReader* reader) {
+     hdr_metadata = hdr_static_metadata;
+   }
+ 
+-  if (video_codec_profile == VIDEO_CODEC_PROFILE_UNKNOWN) {
++  if (video_info.profile == VIDEO_CODEC_PROFILE_UNKNOWN) {
+     MEDIA_LOG(ERROR, reader->media_log()) << "Unrecognized video codec profile";
+     return false;
+   }
+@@ -1389,15 +1382,11 @@ bool VideoSampleEntry::IsFormatValid() const {
+ #if BUILDFLAG(ENABLE_PLATFORM_HEVC)
+     case FOURCC_HEV1:
+     case FOURCC_HVC1:
+-#if BUILDFLAG(ENABLE_PLATFORM_DOLBY_VISION)
+     case FOURCC_DVH1:
+     case FOURCC_DVHE:
+-#endif  // BUILDFLAG(ENABLE_PLATFORM_DOLBY_VISION)
+ #endif  // BUILDFLAG(ENABLE_PLATFORM_HEVC)
+-#if BUILDFLAG(ENABLE_PLATFORM_DOLBY_VISION)
+     case FOURCC_DVA1:
+     case FOURCC_DVAV:
+-#endif  // BUILDFLAG(ENABLE_PLATFORM_DOLBY_VISION)
+ #endif  // BUILDFLAG(USE_PROPRIETARY_CODECS)
+     case FOURCC_VP09:
+       return true;
+diff --git a/media/formats/mp4/box_definitions.h b/media/formats/mp4/box_definitions.h
+index 2303f874b54dd0..13c156d7b07bd4 100644
+--- a/media/formats/mp4/box_definitions.h
++++ b/media/formats/mp4/box_definitions.h
+@@ -346,12 +346,13 @@ struct MEDIA_EXPORT VideoSampleEntry : Box {
+   ProtectionSchemeInfo sinf;
+ 
+   VideoDecoderConfig::AlphaMode alpha_mode;
+-
+-  VideoCodec video_codec;
+-  VideoCodecProfile video_codec_profile;
+-  VideoCodecLevel video_codec_level;
+   VideoColorSpace video_color_space;
++  CodecProfileLevel video_info;
+ 
++  // When set and found on a Dolby Vision source buffer, `dv_info`
++  // will be used to upgrade `video_info` from its backwards
++  // compatible codec (e.g., H.264, H.265) to a Dolby Vision codec.
++  absl::optional<CodecProfileLevel> dv_info;
+   absl::optional<gfx::HDRMetadata> hdr_metadata;
+ 
+   bool IsFormatValid() const;
+diff --git a/media/formats/mp4/dolby_vision.cc b/media/formats/mp4/dolby_vision.cc
+index 2251bbcf20aacb..7ff98b6ab9da27 100644
+--- a/media/formats/mp4/dolby_vision.cc
++++ b/media/formats/mp4/dolby_vision.cc
+@@ -53,6 +53,10 @@ bool DOVIDecoderConfigurationRecord::Parse(BufferReader* reader,
+   rpu_present_flag = (profile_track_indication >> 2) & 1;
+   el_present_flag = (profile_track_indication >> 1) & 1;
+   bl_present_flag = profile_track_indication & 1;
++  if (reader->HasBytes(1)) {
++    RCHECK(reader->Read1(&dv_bl_signal_compatibility_id));
++    dv_bl_signal_compatibility_id = (dv_bl_signal_compatibility_id >> 4) & 0x0F;
++  }
+ 
+   switch (dv_profile) {
+     case 0:
+@@ -84,6 +88,8 @@ bool DOVIDecoderConfigurationRecord::Parse(BufferReader* reader,
+            << " has_bl:" << static_cast<int>(bl_present_flag)
+            << " has_el:" << static_cast<int>(el_present_flag)
+            << " has_rpu:" << static_cast<int>(rpu_present_flag)
++           << " bl_signal_compatibility_id: "
++           << static_cast<int>(dv_bl_signal_compatibility_id)
+            << " profile type:" << codec_profile;
+ 
+   return true;
+diff --git a/media/formats/mp4/dolby_vision.h b/media/formats/mp4/dolby_vision.h
+index fb6eda3f3befe4..cc8cb6e41b9277 100644
+--- a/media/formats/mp4/dolby_vision.h
++++ b/media/formats/mp4/dolby_vision.h
+@@ -20,6 +20,7 @@ struct MEDIA_EXPORT DOVIDecoderConfigurationRecord {
+   uint8_t rpu_present_flag = 0;
+   uint8_t el_present_flag = 0;
+   uint8_t bl_present_flag = 0;
++  uint8_t dv_bl_signal_compatibility_id = 0;
+ 
+   VideoCodecProfile codec_profile = VIDEO_CODEC_PROFILE_UNKNOWN;
+ 
+diff --git a/media/formats/mp4/dolby_vision_unittest.cc b/media/formats/mp4/dolby_vision_unittest.cc
+index d3879a2323775c..e3471047af2d49 100644
+--- a/media/formats/mp4/dolby_vision_unittest.cc
++++ b/media/formats/mp4/dolby_vision_unittest.cc
+@@ -21,70 +21,97 @@ TEST_F(DOVIDecoderConfigurationRecordTest, Profile0Level1ELTrackTest) {
+   EXPECT_EQ(dv_config.dv_version_major, 0);
+   EXPECT_EQ(dv_config.dv_version_minor, 0);
+   EXPECT_EQ(dv_config.codec_profile, DOLBYVISION_PROFILE0);
++  EXPECT_EQ(dv_config.dv_profile, 0);
+   EXPECT_EQ(dv_config.dv_level, 1);
+   EXPECT_EQ(dv_config.rpu_present_flag, 1);
+   EXPECT_EQ(dv_config.el_present_flag, 1);
+   EXPECT_EQ(dv_config.bl_present_flag, 0);
++  EXPECT_EQ(dv_config.dv_bl_signal_compatibility_id, 0);
+ }
+ 
+ TEST_F(DOVIDecoderConfigurationRecordTest, Profile4Level2ELTrackWithBLTest) {
+   DOVIDecoderConfigurationRecord dv_config;
+-  uint8_t data[] = {0x00, 0x00, 0x08, 0x16};
++  uint8_t data[] = {0x00, 0x00, 0x08, 0x16, 0x20};
+ 
+   dv_config.ParseForTesting(data, sizeof(data));
+ 
+   EXPECT_EQ(dv_config.dv_version_major, 0);
+   EXPECT_EQ(dv_config.dv_version_minor, 0);
+   EXPECT_EQ(dv_config.codec_profile, DOLBYVISION_PROFILE4);
++  EXPECT_EQ(dv_config.dv_profile, 4);
+   EXPECT_EQ(dv_config.dv_level, 2);
+   EXPECT_EQ(dv_config.rpu_present_flag, 1);
+   EXPECT_EQ(dv_config.el_present_flag, 1);
+   EXPECT_EQ(dv_config.bl_present_flag, 0);
++  EXPECT_EQ(dv_config.dv_bl_signal_compatibility_id, 2);
+ }
+ 
+ TEST_F(DOVIDecoderConfigurationRecordTest, Profile5Test) {
+   DOVIDecoderConfigurationRecord dv_config;
+-  uint8_t data[] = {0x00, 0x00, 0x0A, 0x17};
++  uint8_t data[] = {0x00, 0x00, 0x0A, 0x17, 0x00};
+ 
+   dv_config.ParseForTesting(data, sizeof(data));
+ 
+   EXPECT_EQ(dv_config.dv_version_major, 0);
+   EXPECT_EQ(dv_config.dv_version_minor, 0);
+   EXPECT_EQ(dv_config.codec_profile, DOLBYVISION_PROFILE5);
++  EXPECT_EQ(dv_config.dv_profile, 5);
+   EXPECT_EQ(dv_config.dv_level, 2);
+   EXPECT_EQ(dv_config.rpu_present_flag, 1);
+   EXPECT_EQ(dv_config.el_present_flag, 1);
+   EXPECT_EQ(dv_config.bl_present_flag, 1);
++  EXPECT_EQ(dv_config.dv_bl_signal_compatibility_id, 0);
+ }
+ 
+-TEST_F(DOVIDecoderConfigurationRecordTest, Profile8Test) {
++TEST_F(DOVIDecoderConfigurationRecordTest, Profile8Point1Test) {
+   DOVIDecoderConfigurationRecord dv_config;
+-  uint8_t data[] = {0x00, 0x00, 0x10, 0x17};
++  uint8_t data[] = {0x00, 0x00, 0x10, 0x17, 0x10};
+ 
+   dv_config.ParseForTesting(data, sizeof(data));
+ 
+   EXPECT_EQ(dv_config.dv_version_major, 0);
+   EXPECT_EQ(dv_config.dv_version_minor, 0);
+   EXPECT_EQ(dv_config.codec_profile, DOLBYVISION_PROFILE8);
++  EXPECT_EQ(dv_config.dv_profile, 8);
+   EXPECT_EQ(dv_config.dv_level, 2);
+   EXPECT_EQ(dv_config.rpu_present_flag, 1);
+   EXPECT_EQ(dv_config.el_present_flag, 1);
+   EXPECT_EQ(dv_config.bl_present_flag, 1);
++  EXPECT_EQ(dv_config.dv_bl_signal_compatibility_id, 1);
++}
++
++TEST_F(DOVIDecoderConfigurationRecordTest, Profile8Point4Test) {
++  DOVIDecoderConfigurationRecord dv_config;
++  uint8_t data[] = {0x01, 0x00, 0x10, 0x2d, 0x40};
++
++  dv_config.ParseForTesting(data, sizeof(data));
++
++  EXPECT_EQ(dv_config.dv_version_major, 1);
++  EXPECT_EQ(dv_config.dv_version_minor, 0);
++  EXPECT_EQ(dv_config.codec_profile, DOLBYVISION_PROFILE8);
++  EXPECT_EQ(dv_config.dv_profile, 8);
++  EXPECT_EQ(dv_config.dv_level, 5);
++  EXPECT_EQ(dv_config.rpu_present_flag, 1);
++  EXPECT_EQ(dv_config.el_present_flag, 0);
++  EXPECT_EQ(dv_config.bl_present_flag, 1);
++  EXPECT_EQ(dv_config.dv_bl_signal_compatibility_id, 4);
+ }
+ 
+ TEST_F(DOVIDecoderConfigurationRecordTest, Profile9Test) {
+   DOVIDecoderConfigurationRecord dv_config;
+-  uint8_t data[] = {0x00, 0x00, 0x12, 0x17};
++  uint8_t data[] = {0x00, 0x00, 0x12, 0x17, 0x20};
+ 
+   dv_config.ParseForTesting(data, sizeof(data));
+ 
+   EXPECT_EQ(dv_config.dv_version_major, 0);
+   EXPECT_EQ(dv_config.dv_version_minor, 0);
+   EXPECT_EQ(dv_config.codec_profile, DOLBYVISION_PROFILE9);
++  EXPECT_EQ(dv_config.dv_profile, 9);
+   EXPECT_EQ(dv_config.dv_level, 2);
+   EXPECT_EQ(dv_config.rpu_present_flag, 1);
+   EXPECT_EQ(dv_config.el_present_flag, 1);
+   EXPECT_EQ(dv_config.bl_present_flag, 1);
++  EXPECT_EQ(dv_config.dv_bl_signal_compatibility_id, 2);
+ }
+ 
+ TEST_F(DOVIDecoderConfigurationRecordTest, ParseNotEnoughData) {
+diff --git a/media/formats/mp4/fourccs.h b/media/formats/mp4/fourccs.h
+index daa5fbf286c2a5..706f19f6e33a6b 100644
+--- a/media/formats/mp4/fourccs.h
++++ b/media/formats/mp4/fourccs.h
+@@ -43,7 +43,6 @@ enum FourCC {
+   FOURCC_DFLA = 0x64664c61,  // "dfLa"
+   FOURCC_DINF = 0x64696e66,
+   FOURCC_DOPS = 0x644f7073,  // "dOps"
+-#if BUILDFLAG(ENABLE_PLATFORM_DOLBY_VISION)
+   FOURCC_DVA1 = 0x64766131,
+   FOURCC_DVAV = 0x64766176,
+   FOURCC_DVCC = 0x64766343,
+@@ -51,7 +50,6 @@ enum FourCC {
+ #if BUILDFLAG(ENABLE_PLATFORM_HEVC)
+   FOURCC_DVH1 = 0x64766831,
+   FOURCC_DVHE = 0x64766865,
+-#endif
+ #endif
+   FOURCC_DREF = 0x64726566,
+   FOURCC_EDTS = 0x65647473,
+diff --git a/media/formats/mp4/mp4_stream_parser.cc b/media/formats/mp4/mp4_stream_parser.cc
+index 94f54a2b6638c6..fbf07398538f45 100644
+--- a/media/formats/mp4/mp4_stream_parser.cc
++++ b/media/formats/mp4/mp4_stream_parser.cc
+@@ -25,6 +25,7 @@
+ #include "media/base/stream_parser.h"
+ #include "media/base/stream_parser_buffer.h"
+ #include "media/base/timestamp_constants.h"
++#include "media/base/video_codecs.h"
+ #include "media/base/video_decoder_config.h"
+ #include "media/base/video_util.h"
+ #include "media/formats/mp4/box_definitions.h"
+@@ -74,7 +75,8 @@ class ExternalMemoryAdapter : public DecoderBuffer::ExternalMemory {
+ 
+ MP4StreamParser::MP4StreamParser(const std::set<int>& audio_object_types,
+                                  bool has_sbr,
+-                                 bool has_flac)
++                                 bool has_flac,
++                                 bool has_dv)
+     : state_(kWaitingForInit),
+       moof_head_(0),
+       mdat_tail_(0),
+@@ -84,6 +86,7 @@ MP4StreamParser::MP4StreamParser(const std::set<int>& audio_object_types,
+       audio_object_types_(audio_object_types),
+       has_sbr_(has_sbr),
+       has_flac_(has_flac),
++      has_dv_(has_dv),
+       num_empty_samples_skipped_(0),
+       num_invalid_conversions_(0),
+       num_video_keyframe_mismatches_(0) {}
+@@ -680,7 +683,25 @@ bool MP4StreamParser::ParseMoov(BoxReader* reader) {
+         if (scheme == EncryptionScheme::kUnencrypted)
+           return false;
+       }
+-      video_config.Initialize(entry.video_codec, entry.video_codec_profile,
++      VideoCodec video_codec = entry.video_info.codec;
++      VideoCodecProfile video_codec_profile = entry.video_info.profile;
++      VideoCodecLevel video_codec_level = entry.video_info.level;
++      if (entry.dv_info.has_value()) {
++        DCHECK_EQ(entry.dv_info->codec, VideoCodec::kDolbyVision);
++        if (has_dv_) {
++          video_codec = entry.dv_info->codec;
++          video_codec_profile = entry.dv_info->profile;
++          video_codec_level = entry.dv_info->level;
++        } else {
++          MEDIA_LOG(INFO, media_log_)
++              << "Dolby Vision video track with track_id=" << video_track_id
++              << " has been downgraded to use " << GetCodecName(video_codec)
++              << ". To prevent this, where Dolby Vision is supported, use a "
++              << "Dolby Vision codec string when constructing the "
++                 "SourceBuffer.";
++        }
++      }
++      video_config.Initialize(video_codec, video_codec_profile,
+                               entry.alpha_mode, VideoColorSpace::REC709(),
+                               CalculateRotation(track->header, moov_->header),
+                               coded_size, visible_rect, natural_size,
+@@ -688,7 +709,7 @@ bool MP4StreamParser::ParseMoov(BoxReader* reader) {
+                               // SPS/PPS are embedded in the video stream
+                               EmptyExtraData(), scheme);
+       video_config.set_aspect_ratio(aspect_ratio);
+-      video_config.set_level(entry.video_codec_level);
++      video_config.set_level(video_codec_level);
+ 
+       if (entry.video_color_space.IsSpecified())
+         video_config.set_color_space_info(entry.video_color_space);
+@@ -941,9 +962,10 @@ ParseResult MP4StreamParser::EnqueueSample(BufferQueueMap* buffers) {
+ 
+   std::vector<uint8_t> frame_buf(buf, buf + sample_size);
+   if (video) {
+-    if (runs_->video_description().video_codec == VideoCodec::kH264 ||
+-        runs_->video_description().video_codec == VideoCodec::kHEVC ||
+-        runs_->video_description().video_codec == VideoCodec::kDolbyVision) {
++    if (runs_->video_description().video_info.codec == VideoCodec::kH264 ||
++        runs_->video_description().video_info.codec == VideoCodec::kHEVC ||
++        runs_->video_description().video_info.codec ==
++            VideoCodec::kDolbyVision) {
+       DCHECK(runs_->video_description().frame_bitstream_converter);
+       BitstreamConverter::AnalysisResult analysis;
+       if (!runs_->video_description()
+diff --git a/media/formats/mp4/mp4_stream_parser.h b/media/formats/mp4/mp4_stream_parser.h
+index e73104108b5022..42aa3da5cd000b 100644
+--- a/media/formats/mp4/mp4_stream_parser.h
++++ b/media/formats/mp4/mp4_stream_parser.h
+@@ -35,7 +35,8 @@ class MEDIA_EXPORT MP4StreamParser : public StreamParser {
+  public:
+   MP4StreamParser(const std::set<int>& audio_object_types,
+                   bool has_sbr,
+-                  bool has_flac);
++                  bool has_flac,
++                  bool has_dv);
+ 
+   MP4StreamParser(const MP4StreamParser&) = delete;
+   MP4StreamParser& operator=(const MP4StreamParser&) = delete;
+@@ -163,6 +164,10 @@ class MEDIA_EXPORT MP4StreamParser : public StreamParser {
+   const std::set<int> audio_object_types_;
+   const bool has_sbr_;
+   const bool has_flac_;
++  // Indicate if source buffer has been set as Dolby Vision. If true, always
++  // treat the source buffer as Dolby Vision, if false, a downgrade (e.g.,
++  // to H.264, H.265 codec) may occur if the buffer is backward compatible.
++  const bool has_dv_;
+ 
+   // Tracks the number of MEDIA_LOGS for skipping empty trun samples.
+   int num_empty_samples_skipped_;
+diff --git a/media/formats/mp4/mp4_stream_parser_unittest.cc b/media/formats/mp4/mp4_stream_parser_unittest.cc
+index 58643893cc4f62..bf639e02b35b37 100644
+--- a/media/formats/mp4/mp4_stream_parser_unittest.cc
++++ b/media/formats/mp4/mp4_stream_parser_unittest.cc
+@@ -63,6 +63,10 @@ MATCHER(SampleEncryptionInfoUnavailableLog, "") {
+   return CONTAINS_STRING(arg, "Sample encryption info is not available.");
+ }
+ 
++MATCHER_P(InfoLog, error_string, "") {
++  return CONTAINS_STRING(arg, error_string) && CONTAINS_STRING(arg, "info");
++}
++
+ MATCHER_P(ErrorLog, error_string, "") {
+   return CONTAINS_STRING(arg, error_string) && CONTAINS_STRING(arg, "error");
+ }
+@@ -79,7 +83,7 @@ class MP4StreamParserTest : public testing::Test {
+         verifying_keyframeness_sequence_(false) {
+     std::set<int> audio_object_types;
+     audio_object_types.insert(kISO_14496_3);
+-    parser_.reset(new MP4StreamParser(audio_object_types, false, false));
++    parser_.reset(new MP4StreamParser(audio_object_types, false, false, false));
+   }
+ 
+  protected:
+@@ -398,7 +402,7 @@ TEST_F(MP4StreamParserTest, MPEG2_AAC_LC) {
+   InSequence s;
+   std::set<int> audio_object_types;
+   audio_object_types.insert(kISO_13818_7_AAC_LC);
+-  parser_.reset(new MP4StreamParser(audio_object_types, false, false));
++  parser_.reset(new MP4StreamParser(audio_object_types, false, false, false));
+   auto params = GetDefaultInitParametersExpectations();
+   params.detected_video_track_count = 0;
+   InitializeParserWithInitParametersExpectations(params);
+@@ -410,7 +414,7 @@ TEST_F(MP4StreamParserTest, MPEG4_XHE_AAC) {
+   InSequence s;  // The keyframeness sequence matters for this test.
+   std::set<int> audio_object_types;
+   audio_object_types.insert(kISO_14496_3);
+-  parser_.reset(new MP4StreamParser(audio_object_types, false, false));
++  parser_.reset(new MP4StreamParser(audio_object_types, false, false, false));
+   auto params = GetDefaultInitParametersExpectations();
+   params.detected_video_track_count = 0;
+ 
+@@ -616,10 +620,122 @@ TEST_F(MP4StreamParserTest, NaturalSizeWithPASP) {
+   EXPECT_EQ(gfx::Size(639, 360), video_decoder_config_.natural_size());
+ }
+ 
++TEST_F(MP4StreamParserTest, DemuxingDVProfile5WithDVMimeTypeSourceBuffer) {
++  std::set<int> audio_object_types;
++  parser_.reset(new MP4StreamParser(audio_object_types, false, false, true));
++
++#if BUILDFLAG(ENABLE_PLATFORM_HEVC)
++  bool expect_success = true;
++#else
++  bool expect_success = false;
++  EXPECT_MEDIA_LOG(ErrorLog("Unsupported VisualSampleEntry type dvh1"));
++#endif
++
++  auto params = GetDefaultInitParametersExpectations();
++  params.duration = base::Microseconds(2000000);
++  params.liveness = StreamLiveness::kRecorded;
++  params.detected_audio_track_count = 0;
++  InitializeParserWithInitParametersExpectations(params);
++
++  scoped_refptr<DecoderBuffer> buffer =
++      ReadTestDataFile("glass-blowing2-dolby-vision-profile-5-frag.mp4");
++  EXPECT_EQ(expect_success, AppendAllDataThenParseInPieces(
++                                buffer->data(), buffer->data_size(), 512));
++#if BUILDFLAG(ENABLE_PLATFORM_HEVC)
++  EXPECT_EQ(VideoCodec::kDolbyVision, video_decoder_config_.codec());
++  EXPECT_EQ(DOLBYVISION_PROFILE5, video_decoder_config_.profile());
++#endif
++}
++
++TEST_F(MP4StreamParserTest, DemuxingDVProfile5WithHEVCMimeTypeSourceBuffer) {
++  std::set<int> audio_object_types;
++  parser_.reset(new MP4StreamParser(audio_object_types, false, false, false));
++
++#if BUILDFLAG(ENABLE_PLATFORM_HEVC)
++  bool expect_success = true;
++#else
++  bool expect_success = false;
++  EXPECT_MEDIA_LOG(ErrorLog("Unsupported VisualSampleEntry type dvh1"));
++#endif
++
++  auto params = GetDefaultInitParametersExpectations();
++  params.duration = base::Microseconds(2000000);
++  params.liveness = StreamLiveness::kRecorded;
++  params.detected_audio_track_count = 0;
++  InitializeParserWithInitParametersExpectations(params);
++
++  scoped_refptr<DecoderBuffer> buffer =
++      ReadTestDataFile("glass-blowing2-dolby-vision-profile-5-frag.mp4");
++  EXPECT_EQ(expect_success, AppendAllDataThenParseInPieces(
++                                buffer->data(), buffer->data_size(), 512));
++#if BUILDFLAG(ENABLE_PLATFORM_HEVC)
++  EXPECT_EQ(VideoCodec::kDolbyVision, video_decoder_config_.codec());
++  EXPECT_EQ(DOLBYVISION_PROFILE5, video_decoder_config_.profile());
++#endif
++}
++
++TEST_F(MP4StreamParserTest, DemuxingDVProfile8WithDVMimeTypeSourceBuffer) {
++  std::set<int> audio_object_types;
++  parser_.reset(new MP4StreamParser(audio_object_types, false, false, true));
++
++#if BUILDFLAG(ENABLE_PLATFORM_HEVC)
++  bool expect_success = true;
++#else
++  bool expect_success = false;
++  EXPECT_MEDIA_LOG(ErrorLog("Unsupported VisualSampleEntry type hvc1"));
++#endif
++
++  auto params = GetDefaultInitParametersExpectations();
++  params.duration = base::Microseconds(2000000);
++  params.liveness = StreamLiveness::kRecorded;
++  params.detected_audio_track_count = 0;
++  InitializeParserWithInitParametersExpectations(params);
++
++  scoped_refptr<DecoderBuffer> buffer =
++      ReadTestDataFile("glass-blowing2-dolby-vision-profile-8-1-frag.mp4");
++  EXPECT_EQ(expect_success, AppendAllDataThenParseInPieces(
++                                buffer->data(), buffer->data_size(), 512));
++#if BUILDFLAG(ENABLE_PLATFORM_HEVC)
++  EXPECT_EQ(VideoCodec::kDolbyVision, video_decoder_config_.codec());
++  EXPECT_EQ(DOLBYVISION_PROFILE8, video_decoder_config_.profile());
++#endif
++}
++
++TEST_F(MP4StreamParserTest, DemuxingDVProfile8WithHEVCMimeTypeSourceBuffer) {
++  std::set<int> audio_object_types;
++  parser_.reset(new MP4StreamParser(audio_object_types, false, false, false));
++
++#if BUILDFLAG(ENABLE_PLATFORM_HEVC)
++  bool expect_success = true;
++  EXPECT_MEDIA_LOG(InfoLog(
++      "Dolby Vision video track with track_id=1 has been downgraded to "
++      "use hevc. To prevent this, where Dolby Vision is supported, use a "
++      "Dolby Vision codec string when constructing the SourceBuffer."));
++#else
++  bool expect_success = false;
++  EXPECT_MEDIA_LOG(ErrorLog("Unsupported VisualSampleEntry type hvc1"));
++#endif
++
++  auto params = GetDefaultInitParametersExpectations();
++  params.duration = base::Microseconds(2000000);
++  params.liveness = StreamLiveness::kRecorded;
++  params.detected_audio_track_count = 0;
++  InitializeParserWithInitParametersExpectations(params);
++
++  scoped_refptr<DecoderBuffer> buffer =
++      ReadTestDataFile("glass-blowing2-dolby-vision-profile-8-1-frag.mp4");
++  EXPECT_EQ(expect_success, AppendAllDataThenParseInPieces(
++                                buffer->data(), buffer->data_size(), 512));
++#if BUILDFLAG(ENABLE_PLATFORM_HEVC)
++  EXPECT_EQ(VideoCodec::kHEVC, video_decoder_config_.codec());
++  EXPECT_EQ(HEVCPROFILE_MAIN10, video_decoder_config_.profile());
++#endif
++}
++
+ TEST_F(MP4StreamParserTest, DemuxingAC3) {
+   std::set<int> audio_object_types;
+   audio_object_types.insert(kAC3);
+-  parser_.reset(new MP4StreamParser(audio_object_types, false, false));
++  parser_.reset(new MP4StreamParser(audio_object_types, false, false, false));
+ 
+ #if BUILDFLAG(ENABLE_PLATFORM_AC3_EAC3_AUDIO)
+   bool expect_success = true;
+@@ -643,7 +759,7 @@ TEST_F(MP4StreamParserTest, DemuxingAC3) {
+ TEST_F(MP4StreamParserTest, DemuxingEAC3) {
+   std::set<int> audio_object_types;
+   audio_object_types.insert(kEAC3);
+-  parser_.reset(new MP4StreamParser(audio_object_types, false, false));
++  parser_.reset(new MP4StreamParser(audio_object_types, false, false, false));
+ 
+ #if BUILDFLAG(ENABLE_PLATFORM_AC3_EAC3_AUDIO)
+   bool expect_success = true;
+@@ -667,7 +783,7 @@ TEST_F(MP4StreamParserTest, DemuxingEAC3) {
+ TEST_F(MP4StreamParserTest, DemuxingAc4Ims) {
+   std::set<int> audio_object_types;
+   audio_object_types.insert(kAC4);
+-  parser_.reset(new MP4StreamParser(audio_object_types, false, false));
++  parser_.reset(new MP4StreamParser(audio_object_types, false, false, false));
+ 
+ #if BUILDFLAG(ENABLE_PLATFORM_AC4_AUDIO)
+   constexpr bool kExpectSuccess = true;
+@@ -691,7 +807,7 @@ TEST_F(MP4StreamParserTest, DemuxingAc4Ims) {
+ TEST_F(MP4StreamParserTest, DemuxingAc4AJoc) {
+   std::set<int> audio_object_types;
+   audio_object_types.insert(kAC4);
+-  parser_.reset(new MP4StreamParser(audio_object_types, false, false));
++  parser_.reset(new MP4StreamParser(audio_object_types, false, false, false));
+ 
+ #if BUILDFLAG(ENABLE_PLATFORM_AC4_AUDIO)
+   constexpr bool kExpectSuccess = true;
+@@ -715,7 +831,7 @@ TEST_F(MP4StreamParserTest, DemuxingAc4AJoc) {
+ TEST_F(MP4StreamParserTest, DemuxingAc4ChannelBasedCoding) {
+   std::set<int> audio_object_types;
+   audio_object_types.insert(kAC4);
+-  parser_.reset(new MP4StreamParser(audio_object_types, false, false));
++  parser_.reset(new MP4StreamParser(audio_object_types, false, false, false));
+ 
+ #if BUILDFLAG(ENABLE_PLATFORM_AC4_AUDIO)
+   constexpr bool kExpectSuccess = true;
+@@ -739,7 +855,7 @@ TEST_F(MP4StreamParserTest, DemuxingAc4ChannelBasedCoding) {
+ TEST_F(MP4StreamParserTest, DemuxingDTS) {
+   std::set<int> audio_object_types;
+   audio_object_types.insert(kDTS);
+-  parser_.reset(new MP4StreamParser(audio_object_types, false, false));
++  parser_.reset(new MP4StreamParser(audio_object_types, false, false, false));
+ 
+ #if BUILDFLAG(ENABLE_PLATFORM_DTS_AUDIO)
+   bool expect_success = true;
+@@ -762,7 +878,7 @@ TEST_F(MP4StreamParserTest, DemuxingDTS) {
+ TEST_F(MP4StreamParserTest, DemuxingDTSE) {
+   std::set<int> audio_object_types;
+   audio_object_types.insert(kDTSE);
+-  parser_.reset(new MP4StreamParser(audio_object_types, false, false));
++  parser_.reset(new MP4StreamParser(audio_object_types, false, false, false));
+ 
+ #if BUILDFLAG(ENABLE_PLATFORM_DTS_AUDIO)
+   bool expect_success = true;
+@@ -785,7 +901,7 @@ TEST_F(MP4StreamParserTest, DemuxingDTSE) {
+ TEST_F(MP4StreamParserTest, DemuxingDTSX) {
+   std::set<int> audio_object_types;
+   audio_object_types.insert(kDTSX);
+-  parser_.reset(new MP4StreamParser(audio_object_types, false, false));
++  parser_.reset(new MP4StreamParser(audio_object_types, false, false, false));
+ 
+ #if BUILDFLAG(ENABLE_PLATFORM_DTS_AUDIO)
+   bool expect_success = true;
+@@ -806,7 +922,7 @@ TEST_F(MP4StreamParserTest, DemuxingDTSX) {
+ }
+ 
+ TEST_F(MP4StreamParserTest, Flac) {
+-  parser_.reset(new MP4StreamParser(std::set<int>(), false, true));
++  parser_.reset(new MP4StreamParser(std::set<int>(), false, true, false));
+ 
+   auto params = GetDefaultInitParametersExpectations();
+   params.detected_video_track_count = 0;
+@@ -818,7 +934,7 @@ TEST_F(MP4StreamParserTest, Flac) {
+ }
+ 
+ TEST_F(MP4StreamParserTest, Flac192kHz) {
+-  parser_.reset(new MP4StreamParser(std::set<int>(), false, true));
++  parser_.reset(new MP4StreamParser(std::set<int>(), false, true, false));
+ 
+   auto params = GetDefaultInitParametersExpectations();
+   params.detected_video_track_count = 0;
+@@ -969,7 +1085,7 @@ class MP4StreamParserRotationMatrixEvaluatorTest
+   MP4StreamParserRotationMatrixEvaluatorTest() {
+     std::set<int> audio_object_types;
+     audio_object_types.insert(kISO_14496_3);
+-    parser_.reset(new MP4StreamParser(audio_object_types, false, false));
++    parser_.reset(new MP4StreamParser(audio_object_types, false, false, false));
+   }
+ 
+  protected:
+diff --git a/media/muxers/mp4_muxer_box_writer_unittest.cc b/media/muxers/mp4_muxer_box_writer_unittest.cc
+index 328cf6a41956ef..30ecb6812e330f 100644
+--- a/media/muxers/mp4_muxer_box_writer_unittest.cc
++++ b/media/muxers/mp4_muxer_box_writer_unittest.cc
+@@ -584,7 +584,7 @@ TEST_F(Mp4MuxerBoxWriterTest, Mp4MovieVisualSampleEntry) {
+   EXPECT_EQ(static_cast<uint16_t>(kWidth), video_sample_entry.width);
+   EXPECT_EQ(static_cast<uint16_t>(kHeight), video_sample_entry.height);
+   EXPECT_EQ(VideoCodecProfile::H264PROFILE_MAIN,
+-            video_sample_entry.video_codec_profile);
++            video_sample_entry.video_info.profile);
+ }
+ 
+ TEST_F(Mp4MuxerBoxWriterTest, Mp4MovieAVCDecoderConfigurationRecord) {
+diff --git a/media/muxers/mp4_muxer_delegate_unittest.cc b/media/muxers/mp4_muxer_delegate_unittest.cc
+index 632be03b55b0c5..3295db5022df02 100644
+--- a/media/muxers/mp4_muxer_delegate_unittest.cc
++++ b/media/muxers/mp4_muxer_delegate_unittest.cc
+@@ -214,7 +214,8 @@ TEST_F(Mp4MuxerDelegateTest, AddVideoFrame) {
+     // Validate MP4 format.
+     std::set<int> audio_object_types;
+     audio_object_types.insert(mp4::kISO_14496_3);
+-    mp4::MP4StreamParser mp4_stream_parser(audio_object_types, false, false);
++    mp4::MP4StreamParser mp4_stream_parser(audio_object_types, false, false,
++                                           false);
+     StreamParser::InitParameters stream_params(base::TimeDelta::Max());
+     stream_params.detected_video_track_count = 1;
+     mp4_stream_parser.Init(
+@@ -518,7 +519,8 @@ TEST_F(Mp4MuxerDelegateTest, AddAudioFrame) {
+     // Validate MP4 format.
+     std::set<int> audio_object_types;
+     audio_object_types.insert(mp4::kISO_14496_3);
+-    mp4::MP4StreamParser mp4_stream_parser(audio_object_types, false, false);
++    mp4::MP4StreamParser mp4_stream_parser(audio_object_types, false, false,
++                                           false);
+     StreamParser::InitParameters stream_params(base::TimeDelta::Max());
+     stream_params.detected_audio_track_count = 1;
+     mp4_stream_parser.Init(
+diff --git a/media/test/data/README.md b/media/test/data/README.md
+index 327c0d4aad5eca..4b8e4c8aa43c54 100644
+--- a/media/test/data/README.md
++++ b/media/test/data/README.md
+@@ -1507,6 +1507,24 @@ HEVC video stream with 8-bit main profile, generated with
+ ffmpeg -i bear-1280x720.mp4 -vf "scale=3840:2160,setpts=4*PTS" -c:v libx265 -crf 28 -c:a copy bear-3840x2160-hevc.mp4
+ ```
+ 
++### MP4 file with Dolby Vision
++
++#### glass-blowing2-dolby-vision-profile-5-frag.mp4
++Original sample from `https://media.developer.dolby.com/DolbyVision_Atmos/mp4/iOS_P5_GlassBlowing2_1920x1080%4059.94fps_15200kbps.mp4`. Dolby Vision profile 5 video stream generated using FFmpeg/mp4mux/mp4fragment with the following commands:
++```
++ffmpeg -ss 0:00:11 -i iOS_P5_GlassBlowing2_1920x1080@59.94fps_15200kbps.mp4 -t 1 -vcodec copy -an glass-blowing2-dolby-vision-profile-5.hevc
++mp4mux --track h265:glass-blowing2-dolby-vision-profile-5.hevc#dv_profile=5,dv_bc=0,format="dvh1",frame_rate=60,video glass-blowing2-dolby-vision-profile-5.mp4
++mp4fragment glass-blowing2-dolby-vision-profile-5.mp4 glass-blowing2-dolby-vision-profile-5-frag.mp4
++```
++
++#### glass-blowing2-dolby-vision-profile-8-1-frag.mp4
++Original sample from `https://media.developer.dolby.com/DolbyVision_Atmos/mp4/P81_GlassBlowing2_1920x1080%4059.94fps_15200kbps_fmp4.mp4`. Dolby Vision profile 8.1 video stream generated using FFmpeg/mp4mux/mp4fragment with the following commands:
++```
++ffmpeg -ss 0:00:11 -i P81_GlassBlowing2_1920x1080@59.94fps_15200kbps_fmp4.mp4 -t 1 -vcodec copy -an glass-blowing2-dolby-vision-profile-8-1.hevc
++mp4mux --track h265:glass-blowing2-dolby-vision-profile-8-1.hevc#dv_profile=8,dv_bc=1,format="hvc1",frame_rate=60,video glass-blowing2-dolby-vision-profile-8-1.mp4
++mp4fragment glass-blowing2-dolby-vision-profile-8-1.mp4 glass-blowing2-dolby-vision-profile-8-1-frag.mp4
++```
++
+ ### Multi-track MP4 file
+ 
+ (c) copyright 2008, Blender Foundation / www.bigbuckbunny.org
+diff --git a/media/test/data/glass-blowing2-dolby-vision-profile-5-frag.mp4 b/media/test/data/glass-blowing2-dolby-vision-profile-5-frag.mp4
+new file mode 100644
+index 00000000000000..70e53b60d17e74
+Binary files /dev/null and b/media/test/data/glass-blowing2-dolby-vision-profile-5-frag.mp4 differ
+diff --git a/media/test/data/glass-blowing2-dolby-vision-profile-8-1-frag.mp4 b/media/test/data/glass-blowing2-dolby-vision-profile-8-1-frag.mp4
+new file mode 100644
+index 00000000000000..129881c2d1b599
+Binary files /dev/null and b/media/test/data/glass-blowing2-dolby-vision-profile-8-1-frag.mp4 differ
+diff --git a/media/test/media_bundle_data.filelist b/media/test/media_bundle_data.filelist
+index 979d78e7a8982b..261855f943e0d4 100644
+--- a/media/test/media_bundle_data.filelist
++++ b/media/test/media_bundle_data.filelist
+@@ -361,6 +361,8 @@ data/four-colors.mp4
+ data/four-colors.png
+ data/four-colors.y4m
+ data/frame_size_change-av_enc-v.webm
++data/glass-blowing2-dolby-vision-profile-5-frag.mp4
++data/glass-blowing2-dolby-vision-profile-8-1-frag.mp4
+ data/green-a300hz.webm
+ data/h264-320x180-frame-0
+ data/h264-320x180-frame-1
+diff --git a/media/unit_tests_bundle_data.filelist b/media/unit_tests_bundle_data.filelist
+index d5ae9c5a461265..b45b740355e0ed 100644
+--- a/media/unit_tests_bundle_data.filelist
++++ b/media/unit_tests_bundle_data.filelist
+@@ -373,6 +373,8 @@
+ //media/test/data/four-colors.png
+ //media/test/data/four-colors.y4m
+ //media/test/data/frame_size_change-av_enc-v.webm
++//media/test/data/glass-blowing2-dolby-vision-profile-5-frag.mp4
++//media/test/data/glass-blowing2-dolby-vision-profile-8-1-frag.mp4
+ //media/test/data/green-a300hz.webm
+ //media/test/data/h264-320x180-frame-0
+ //media/test/data/h264-320x180-frame-1
