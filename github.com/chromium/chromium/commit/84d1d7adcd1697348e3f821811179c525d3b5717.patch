@@ -129,19 +129,6 @@ Cr-Commit-Position: refs/heads/main@{#1229653}
  third_party/ffmpeg                            |   2 +-
  5 files changed, 97 insertions(+), 97 deletions(-)
 
-diff --git a/DEPS b/DEPS
-index e026ac097ace9d..784f3b23ecd16f 100644
---- a/DEPS
-+++ b/DEPS
-@@ -489,7 +489,7 @@ vars = {
-   # Three lines of non-changing comments so that
-   # the commit queue can handle CLs rolling ffmpeg
-   # and whatever else without interference from each other.
--  'ffmpeg_revision': 'c1d0dc4135ecb8a75a044019fce960ab5120c65c',
-+  'ffmpeg_revision': '866768f35c2226f4c805844207fd11c049ebe962',
-   # Three lines of non-changing comments so that
-   # the commit queue can handle CLs rolling beto-core
-   # and whatever else without interference from each other.
 diff --git a/media/ffmpeg/ffmpeg_common.cc b/media/ffmpeg/ffmpeg_common.cc
 index 3c97e4a6cf4c78..a55e4ab51d5b35 100644
 --- a/media/ffmpeg/ffmpeg_common.cc
@@ -364,25 +351,3 @@ index cb002490a6322b..e841b4ad13383a 100644
      }
  
      // Extract dictionary from streams also. Needed for containers that attach
-diff --git a/media/filters/ffmpeg_demuxer_unittest.cc b/media/filters/ffmpeg_demuxer_unittest.cc
-index ce0b01b6399510..0ca8bcee792d9b 100644
---- a/media/filters/ffmpeg_demuxer_unittest.cc
-+++ b/media/filters/ffmpeg_demuxer_unittest.cc
-@@ -1481,7 +1481,9 @@ TEST_F(FFmpegDemuxerTest, Read_Mp4_Multiple_Tracks) {
- 
- TEST_F(FFmpegDemuxerTest, Read_Mp4_Crbug657437) {
-   CreateDemuxer("crbug657437.mp4");
--  InitializeDemuxer();
-+  WaitableMessageLoopEvent event;
-+  demuxer_->Initialize(&host_, event.GetPipelineStatusCB());
-+  event.RunAndWaitForStatus(DEMUXER_ERROR_COULD_NOT_OPEN);
- }
- 
- TEST_F(FFmpegDemuxerTest, XHE_AAC) {
-diff --git a/third_party/ffmpeg b/third_party/ffmpeg
-index c1d0dc4135ecb8..866768f35c2226 160000
---- a/third_party/ffmpeg
-+++ b/third_party/ffmpeg
-@@ -1 +1 @@
--Subproject commit c1d0dc4135ecb8a75a044019fce960ab5120c65c
-+Subproject commit 866768f35c2226f4c805844207fd11c049ebe962
