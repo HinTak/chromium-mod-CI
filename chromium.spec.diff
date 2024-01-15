@@ -59,7 +59,7 @@ index b37d37c..747b446 100644
  
  Name:	chromium%{chromium_channel}
 -Version: 120.0.6099.216
-+Version: 122.0.6226.2
++Version: 122.0.6238.2
  Release: 1%{?dist}
  Summary: A WebKit (Blink) powered web browser that Google doesn't want you to use
  Url: http://www.chromium.org/Home
