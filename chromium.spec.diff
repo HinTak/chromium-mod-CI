@@ -173,10 +173,11 @@ index b37d37c..747b446 100644
  %{builddir}/gn --script-executable=%{chromium_pybin} gen --args="$CHROMIUM_CORE_GN_DEFINES $CHROMIUM_BROWSER_GN_DEFINES" %{builddir}
  
  %if %{build_headless}
-@@ -1394,6 +1414,10 @@ mkdir -p %{builddir} && cp -a %{_bindir}/gn %{builddir}/
+@@ -1394,6 +1414,11 @@ mkdir -p %{builddir} && cp -a %{_bindir}/gn %{builddir}/
  %build_target %{headlessbuilddir} headless_shell
  %endif
  
++%{builddir}/gn args --list %{builddir}
 +%build_target %{builddir} third_party/blink/renderer/platform
 +
 +exit $?
