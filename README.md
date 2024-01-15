@@ -116,7 +116,15 @@ chromium-121.0.6167.47-clean.tar.xz
 ```
 
 ```
+chromium-122.0.6226.2-clean.tar.xz
+3335866628
+```
+
+```
 [third_party/blink/renderer/platform:6105/23237] CXX obj/third_party/ots/ots/ots.o
 [third_party/blink/renderer/platform:8267/23237] CXX obj/skia/skia/font_utils.o
 [third_party/blink/renderer/platform:8466/23237] CXX obj/skia/skia/SkFontHost_FreeType.o
+[third_party/blink/renderer/platform:21293/23237] CXX obj/third_party/blink/renderer/platform/platform/font_format_check.o
+[third_party/blink/renderer/platform:21345/23237] CXX obj/third_party/blink/renderer/platform/platform/web_font_typeface_factory.o
+[third_party/blink/renderer/platform:21348/23237] CXX obj/third_party/blink/renderer/platform/platform/web_font_decoder.o
 ```
