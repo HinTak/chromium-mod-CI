@@ -162,15 +162,6 @@ index b37d37c..747b446 100644
  CHROMIUM_CORE_GN_DEFINES+=' chrome_pgo_phase=0'
  %endif
  
-@@ -1222,7 +1238,7 @@ CHROMIUM_CORE_GN_DEFINES+=' use_lld=false'
- %endif
- 
- # disable rust, it's only using for testing
--CHROMIUM_CORE_GN_DEFINES+=' enable_rust=false'
-+CHROMIUM_CORE_GN_DEFINES+=' enable_rust=false enable_cxx=false enable_rust_qr=false'
- 
- CHROMIUM_CORE_GN_DEFINES+=' use_sysroot=false disable_fieldtrial_testing_config=true'
- 
 @@ -1379,6 +1395,10 @@ tools/gn/bootstrap/bootstrap.py --gn-gen-args="$CHROMIUM_CORE_GN_DEFINES $CHROMI
  mkdir -p %{builddir} && cp -a %{_bindir}/gn %{builddir}/
  %endif
