@@ -103,10 +103,9 @@ obj/third_party/blink/renderer/platform/libblink_platform.a
 [third_party/blink/renderer/platform:21121/23003] CXX obj/third_party/blink/renderer/platform/platform/web_font_decoder.o
 ```
 
+```
 chromium-121.0.6167.47-clean.tar.xz
 3351519184
-
-```
 [third_party/blink/renderer/platform:6065/23206] CXX obj/third_party/ots/ots/ots.o
 [third_party/blink/renderer/platform:8248/23206] CXX obj/skia/skia/fontmgr_default_linux.o
 [third_party/blink/renderer/platform:8434/23206] CXX obj/skia/skia/SkFontHost_FreeType.o
@@ -118,13 +117,21 @@ chromium-121.0.6167.47-clean.tar.xz
 ```
 chromium-122.0.6226.2-clean.tar.xz
 3335866628
-```
-
-```
 [third_party/blink/renderer/platform:6105/23237] CXX obj/third_party/ots/ots/ots.o
 [third_party/blink/renderer/platform:8267/23237] CXX obj/skia/skia/font_utils.o
 [third_party/blink/renderer/platform:8466/23237] CXX obj/skia/skia/SkFontHost_FreeType.o
 [third_party/blink/renderer/platform:21293/23237] CXX obj/third_party/blink/renderer/platform/platform/font_format_check.o
 [third_party/blink/renderer/platform:21345/23237] CXX obj/third_party/blink/renderer/platform/platform/web_font_typeface_factory.o
 [third_party/blink/renderer/platform:21348/23237] CXX obj/third_party/blink/renderer/platform/platform/web_font_decoder.o
+```
+
+```
+chromium-122.0.6238.2-clean.tar.xz
+3319947288
+[third_party/blink/renderer/platform:6138/23238] CXX obj/third_party/ots/ots/ots.o
+[third_party/blink/renderer/platform:8266/23238] CXX obj/skia/skia/font_utils.o
+[third_party/blink/renderer/platform:8464/23238] CXX obj/skia/skia/SkFontHost_FreeType.o
+[third_party/blink/renderer/platform:21294/23238] CXX obj/third_party/blink/renderer/platform/platform/font_format_check.o
+[third_party/blink/renderer/platform:21346/23238] CXX obj/third_party/blink/renderer/platform/platform/web_font_typeface_factory.o
+[third_party/blink/renderer/platform:21349/23238] CXX obj/third_party/blink/renderer/platform/platform/web_font_decoder.o
 ```
