@@ -135,3 +135,69 @@ chromium-122.0.6238.2-clean.tar.xz
 [third_party/blink/renderer/platform:21346/23238] CXX obj/third_party/blink/renderer/platform/platform/web_font_typeface_factory.o
 [third_party/blink/renderer/platform:21349/23238] CXX obj/third_party/blink/renderer/platform/platform/web_font_decoder.o
 ```
+
+## Fedora build logs
+
+```
+[Hin-Tak@localhost logs]$ grep obj/third_party/ots/ots/ots. */b*
+aarch64/build.log:[headless_shell:8649/42215] CXX obj/third_party/ots/ots/ots.o
+aarch64/build.log:[chrome:10645/58803] CXX obj/third_party/ots/ots/ots.o
+x86_64/build.log:[headless_shell:8802/41287] CXX obj/third_party/ots/ots/ots.o
+x86_64/build.log:[chrome:10684/57889] CXX obj/third_party/ots/ots/ots.o
+[Hin-Tak@localhost logs]$ grep obj/skia/skia/fontmgr_default_linux. */b*
+aarch64/build.log:[headless_shell:14005/42215] CXX obj/skia/skia/fontmgr_default_linux.o
+aarch64/build.log:[chrome:18488/58803] CXX obj/skia/skia/fontmgr_default_linux.o
+x86_64/build.log:[headless_shell:13961/41287] CXX obj/skia/skia/fontmgr_default_linux.o
+x86_64/build.log:[chrome:15222/57889] CXX obj/skia/skia/fontmgr_default_linux.o
+[Hin-Tak@localhost logs]$ grep obj/skia/skia/SkFontHost_FreeType */b*
+aarch64/build.log:[headless_shell:14310/42215] CXX obj/skia/skia/SkFontHost_FreeType.o
+aarch64/build.log:[headless_shell:14353/42215] CXX obj/skia/skia/SkFontHost_FreeType_common.o
+aarch64/build.log:[chrome:18812/58803] CXX obj/skia/skia/SkFontHost_FreeType.o
+aarch64/build.log:[chrome:18927/58803] CXX obj/skia/skia/SkFontHost_FreeType_common.o
+x86_64/build.log:[headless_shell:14173/41287] CXX obj/skia/skia/SkFontHost_FreeType.o
+x86_64/build.log:[headless_shell:14182/41287] CXX obj/skia/skia/SkFontHost_FreeType_common.o
+x86_64/build.log:[chrome:15437/57889] CXX obj/skia/skia/SkFontHost_FreeType.o
+x86_64/build.log:[chrome:15443/57889] CXX obj/skia/skia/SkFontHost_FreeType_common.o
+[Hin-Tak@localhost logs]$ grep obj/third_party/blink/renderer/platform/platform/font_format_check */b*
+aarch64/build.log:[headless_shell:38901/42215] CXX obj/third_party/blink/renderer/platform/platform/font_format_check.o
+aarch64/build.log:[chrome:52180/58803] CXX obj/third_party/blink/renderer/platform/platform/font_format_check.o
+x86_64/build.log:[headless_shell:39059/41287] CXX obj/third_party/blink/renderer/platform/platform/font_format_check.o
+x86_64/build.log:[chrome:52154/57889] CXX obj/third_party/blink/renderer/platform/platform/font_format_check.o
+[Hin-Tak@localhost logs]$ grep obj/third_party/blink/renderer/platform/platform/web_font_ */b*
+aarch64/build.log:[headless_shell:38864/42215] CXX obj/third_party/blink/renderer/platform/platform/web_font_description.o
+aarch64/build.log:[headless_shell:39021/42215] CXX obj/third_party/blink/renderer/platform/platform/web_font_render_style.o
+aarch64/build.log:[headless_shell:39086/42215] CXX obj/third_party/blink/renderer/platform/platform/web_font_typeface_factory.o
+aarch64/build.log:[headless_shell:39161/42215] CXX obj/third_party/blink/renderer/platform/platform/web_font_decoder.o
+aarch64/build.log:[chrome:52150/58803] CXX obj/third_party/blink/renderer/platform/platform/web_font_description.o
+aarch64/build.log:[chrome:52309/58803] CXX obj/third_party/blink/renderer/platform/platform/web_font_render_style.o
+aarch64/build.log:[chrome:52326/58803] CXX obj/third_party/blink/renderer/platform/platform/web_font_typeface_factory.o
+aarch64/build.log:[chrome:52529/58803] CXX obj/third_party/blink/renderer/platform/platform/web_font_decoder.o
+x86_64/build.log:[headless_shell:39012/41287] CXX obj/third_party/blink/renderer/platform/platform/web_font_description.o
+x86_64/build.log:[headless_shell:39135/41287] CXX obj/third_party/blink/renderer/platform/platform/web_font_render_style.o
+x86_64/build.log:[headless_shell:39141/41287] CXX obj/third_party/blink/renderer/platform/platform/web_font_typeface_factory.o
+x86_64/build.log:[headless_shell:39158/41287] CXX obj/third_party/blink/renderer/platform/platform/web_font_decoder.o
+x86_64/build.log:[chrome:52108/57889] CXX obj/third_party/blink/renderer/platform/platform/web_font_description.o
+x86_64/build.log:[chrome:52233/57889] CXX obj/third_party/blink/renderer/platform/platform/web_font_render_style.o
+x86_64/build.log:[chrome:52237/57889] CXX obj/third_party/blink/renderer/platform/platform/web_font_typeface_factory.o
+x86_64/build.log:[chrome:52261/57889] CXX obj/third_party/blink/renderer/platform/platform/web_font_decoder.o
+```
+
+```
+$ grep 'ninja -j ' */b*
+aarch64/build.log:+ ninja -j 224 -C out/Headless headless_shell
+aarch64/build.log:+ ninja -j 224 -C out/Release chrome
+aarch64/build.log:+ ninja -j 224 -C out/Release chrome_sandbox
+aarch64/build.log:+ ninja -j 224 -C out/Release chromedriver
+aarch64/build.log:+ ninja -j 224 -C out/Release policy_templates
+x86_64/build.log:+ ninja -j 48 -C out/Headless headless_shell
+x86_64/build.log:+ ninja -j 48 -C out/Release chrome
+x86_64/build.log:+ ninja -j 48 -C out/Release chrome_sandbox
+x86_64/build.log:+ ninja -j 48 -C out/Release chromedriver
+x86_64/build.log:+ ninja -j 48 -C out/Release policy_templates
+
+$ grep -i rpmbuild */sta*
+aarch64/state.log:2024-01-16 22:51:00,160 - Start: rpmbuild chromium-120.0.6099.224-1.fc39.src.rpm
+aarch64/state.log:2024-01-17 02:50:50,299 - Finish: rpmbuild chromium-120.0.6099.224-1.fc39.src.rpm
+x86_64/state.log:2024-01-16 22:48:08,129 - Start: rpmbuild chromium-120.0.6099.224-1.fc39.src.rpm
+x86_64/state.log:2024-01-17 03:23:04,069 - Finish: rpmbuild chromium-120.0.6099.224-1.fc39.src.rpm
+```
