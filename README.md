@@ -141,6 +141,8 @@ chromium-122.0.6238.2-clean.tar.xz
 ```
 
 If one divides the 5.5 hours for 23xxx targets to the 58xxx full sets, the expected build time is about 14 hours at 4 cores.
+On the other hand, from 6 hours gettting to 39546/57874, the lower estimate is 9 hours.
+Disk space requirement is ~20GB onwards.
 
 ## Fedora build logs
 
