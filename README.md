@@ -125,7 +125,11 @@ chromium-122.0.6226.2-clean.tar.xz
 [third_party/blink/renderer/platform:21348/23237] CXX obj/third_party/blink/renderer/platform/platform/web_font_decoder.o
 ```
 
+
+
 ```
+ninja -j 4 -C out/Release third_party/blink/renderer/platform
+5h 33m 23s
 chromium-122.0.6238.2-clean.tar.xz
 3319947288
 [third_party/blink/renderer/platform:6138/23238] CXX obj/third_party/ots/ots/ots.o
