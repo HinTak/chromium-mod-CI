@@ -38,17 +38,17 @@ This "patch 2" is only passively tested on Linux (as in it has no affect on "pat
 Bare:
 
 ```
-overlay         87204404 60571144  26616876  70% /
+overlay         87204404 58875772  28312248  68% /
 ```
 
 ```
--rw-r--r-- 1 root root 3278880830 Dec 29 00:40 a.rpm
+-rw-r--r-- 1 root root 3298048007 Jan 15 09:52 a.rpm
 ```
 
 All dependencies:
 
 ```
-overlay         87204404 66291436  20896584  77% /
+overlay         87204404 64616280  22571740  75% /
 ```
 
 Unpacking tarball:
