@@ -140,7 +140,13 @@ chromium-122.0.6238.2-clean.tar.xz
 [third_party/blink/renderer/platform:21349/23238] CXX obj/third_party/blink/renderer/platform/platform/web_font_decoder.o
 ```
 
+If one divides the 5.5 hours for 23xxx targets to the 58xxx full sets, the expected build time is about 14 hours at 4 cores.
+
 ## Fedora build logs
+
+4.5 hours building two versions at 48 cores, it comes to be equivalent to about 32 hours at 4 cores.
+The aarch64 build time of 4 hours at 224 cores is likely very poor parallelism. The setup is about 5:20 minutes vs 3:45 so the arm 64-bit cores
+are not particularly slow over all.
 
 ```
 aarch64/build.log:[headless_shell:8649/42215] CXX obj/third_party/ots/ots/ots.o
@@ -187,9 +193,17 @@ x86_64/build.log:+ ninja -j 48 -C out/Release chrome_sandbox
 x86_64/build.log:+ ninja -j 48 -C out/Release chromedriver
 x86_64/build.log:+ ninja -j 48 -C out/Release policy_templates
 
-$ grep -i rpmbuild */sta*
+$ grep -i rpm */sta*
+aarch64/state.log:2024-01-16 22:45:40,271 - Start: build phase for chromium-120.0.6099.224-1.fc39.src.rpm
+aarch64/state.log:2024-01-16 22:45:40,277 - Start: build setup for chromium-120.0.6099.224-1.fc39.src.rpm
+aarch64/state.log:2024-01-16 22:51:00,157 - Finish: build setup for chromium-120.0.6099.224-1.fc39.src.rpm
 aarch64/state.log:2024-01-16 22:51:00,160 - Start: rpmbuild chromium-120.0.6099.224-1.fc39.src.rpm
 aarch64/state.log:2024-01-17 02:50:50,299 - Finish: rpmbuild chromium-120.0.6099.224-1.fc39.src.rpm
+aarch64/state.log:2024-01-17 02:50:52,155 - Finish: build phase for chromium-120.0.6099.224-1.fc39.src.rpm
+x86_64/state.log:2024-01-16 22:44:22,210 - Start: build phase for chromium-120.0.6099.224-1.fc39.src.rpm
+x86_64/state.log:2024-01-16 22:44:22,215 - Start: build setup for chromium-120.0.6099.224-1.fc39.src.rpm
+x86_64/state.log:2024-01-16 22:48:08,127 - Finish: build setup for chromium-120.0.6099.224-1.fc39.src.rpm
 x86_64/state.log:2024-01-16 22:48:08,129 - Start: rpmbuild chromium-120.0.6099.224-1.fc39.src.rpm
 x86_64/state.log:2024-01-17 03:23:04,069 - Finish: rpmbuild chromium-120.0.6099.224-1.fc39.src.rpm
+x86_64/state.log:2024-01-17 03:23:05,862 - Finish: build phase for chromium-120.0.6099.224-1.fc39.src.rpm
 ```
