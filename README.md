@@ -1,7 +1,8 @@
 # Chromium SVG in OpenType support
 
 This is a set of patches to address
-Chromium [Issue 306078: SVG in OpenType support](https://bugs.chromium.org/p/chromium/issues/detail?id=306078).
+Chromium [Issue 306078: SVG in OpenType support](https://bugs.chromium.org/p/chromium/issues/detail?id=306078),
+[new issue location](https://issues.chromium.org/40336440).
 Chromium is too large to be built within github's 6 hour limit, so this CI only attempts to build Blink as a library,
 just to verify that the patches build. And that takes just over 5 hours, and I reckon constitute about 40% of chromium.
 The patches are tested in the QT6 versions mentioned below.
@@ -32,6 +33,12 @@ These two allows OT-SVG to work on Linux, so it is combined into a "patch 1".
 along the same line as other font formats is added for SVG too.
 
 This "patch 2" is only passively tested on Linux (as in it has no affect on "patch 1").
+
+## Downstream issues
+
+[ungoogled chromium](https://github.com/ungoogled-software/ungoogled-chromium/issues/2657),
+[Fedora shipped chromium package](https://bugzilla.redhat.com/show_bug.cgi?id=2256895),
+[QT WebEngine](https://bugreports.qt.io/browse/QTBUG-120543).
 
 ## misc
 
