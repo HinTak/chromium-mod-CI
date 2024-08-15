@@ -1,4 +1,5 @@
 # Chromium SVG in OpenType support
+[![CI](https://github.com/HinTak/chromium-mod-CI/actions/workflows/ci.yml/badge.svg)](https://github.com/HinTak/chromium-mod-CI/actions/workflows/ci.yml)
 
 This is a set of patches to address
 Chromium [Issue 306078: SVG in OpenType support](https://bugs.chromium.org/p/chromium/issues/detail?id=306078),
