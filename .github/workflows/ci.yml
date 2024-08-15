@@ -26,7 +26,7 @@ jobs:
       - run: pushd chromium && tar -czpf ${GITHUB_WORKSPACE}/before.tgz skia third_party/ots third_party/skia third_party/blink/renderer/platform chrome/VERSION && popd
 #      - run:  ./chromium-latest.py --version 122.0.6232.1 --ffmpegclean --ffmpegarm
       - run: df
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: before-main
           path: before.tgz
@@ -96,11 +96,11 @@ jobs:
       - run: find ~/rpmbuild/BUILD/chromium-* -type f -name libots.a -print -exec llvm-nm -C {} \;
       - run: find ~/rpmbuild/BUILD/chromium-* -type f -name libblink_platform.a -print -exec llvm-nm -C {} \;
       - run: tar -cJpf after.txz ~/rpmbuild/BUILD/chromium-*/out/Release/
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: before
           path: before.tgz
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: after
           path: after.txz
