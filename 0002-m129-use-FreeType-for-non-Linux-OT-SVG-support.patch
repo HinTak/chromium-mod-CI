@@ -1,0 +1,79 @@
+From 8d82349fae6c88ea69cf704268aa0916acb6760a Mon Sep 17 00:00:00 2001
+From: Hin-Tak Leung <htl10@users.sourceforge.net>
+Date: Sat, 17 Aug 2024 00:17:20 +0100
+Subject: [PATCH 2/2] m129 use FreeType for non-Linux OT-SVG support
+
+Adjusted for 129.0.6658.0
+
+Signed-off-by: Hin-Tak Leung <htl10@users.sourceforge.net>
+---
+ .../renderer/platform/fonts/opentype/font_format_check.cc   | 6 +++++-
+ .../renderer/platform/fonts/opentype/font_format_check.h    | 1 +
+ .../renderer/platform/fonts/web_font_typeface_factory.cc    | 2 ++
+ .../renderer/platform/fonts/web_font_typeface_factory.h     | 3 ++-
+ 4 files changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/third_party/blink/renderer/platform/fonts/opentype/font_format_check.cc b/third_party/blink/renderer/platform/fonts/opentype/font_format_check.cc
+index 8b75a6ab..481e1cd5 100644
+--- a/third_party/blink/renderer/platform/fonts/opentype/font_format_check.cc
++++ b/third_party/blink/renderer/platform/fonts/opentype/font_format_check.cc
+@@ -99,12 +99,16 @@ bool FontFormatCheck::IsSbixColorFont() const {
+   return table_tags_.size() && table_tags_.Contains(HB_TAG('s', 'b', 'i', 'x'));
+ }
+ 
++bool FontFormatCheck::IsSvgColorFont() const {
++  return table_tags_.size() && table_tags_.Contains(HB_TAG('S', 'V', 'G', ' '));
++}
++
+ bool FontFormatCheck::IsCff2OutlineFont() const {
+   return table_tags_.size() && table_tags_.Contains(HB_TAG('C', 'F', 'F', '2'));
+ }
+ 
+ bool FontFormatCheck::IsColorFont() const {
+-  return IsCbdtCblcColorFont() || IsColrCpalColorFont() || IsSbixColorFont();
++  return IsCbdtCblcColorFont() || IsColrCpalColorFont() || IsSbixColorFont() || IsSvgColorFont();
+ }
+ 
+ FontFormatCheck::VariableFontSubType FontFormatCheck::ProbeVariableFont(
+diff --git a/third_party/blink/renderer/platform/fonts/opentype/font_format_check.h b/third_party/blink/renderer/platform/fonts/opentype/font_format_check.h
+index 824cf324..e1e7be2e 100644
+--- a/third_party/blink/renderer/platform/fonts/opentype/font_format_check.h
++++ b/third_party/blink/renderer/platform/fonts/opentype/font_format_check.h
+@@ -29,6 +29,7 @@ class PLATFORM_EXPORT FontFormatCheck {
+   virtual bool IsColrCpalColorFontV1() const;
+   bool IsVariableColrV0Font() const;
+   virtual bool IsSbixColorFont() const;
++  virtual bool IsSvgColorFont() const;
+   virtual bool IsCff2OutlineFont() const;
+   bool IsColorFont() const;
+ 
+diff --git a/third_party/blink/renderer/platform/fonts/web_font_typeface_factory.cc b/third_party/blink/renderer/platform/fonts/web_font_typeface_factory.cc
+index 897686a5..6832430d 100644
+--- a/third_party/blink/renderer/platform/fonts/web_font_typeface_factory.cc
++++ b/third_party/blink/renderer/platform/fonts/web_font_typeface_factory.cc
+@@ -237,6 +237,8 @@ bool WebFontTypefaceFactory::CreateTypeface(
+        InstantiationResult::kSuccessColrV1Font, std::nullopt},
+       {&FontFormatCheck::IsSbixColorFont, &MakeSbixTypeface,
+        InstantiationResult::kSuccessSbixFont, std::nullopt},
++      {&FontFormatCheck::IsSvgColorFont, &MakeFontationsFallbackPreferred,
++       InstantiationResult::kSuccessSvgFont, std::nullopt},
+       {&FontFormatCheck::IsCff2OutlineFont, &MakeFontationsFallbackPreferred,
+        InstantiationResult::kSuccessCff2Font, std::nullopt},
+       // We need to special case variable COLRv0 for backend instantiation as
+diff --git a/third_party/blink/renderer/platform/fonts/web_font_typeface_factory.h b/third_party/blink/renderer/platform/fonts/web_font_typeface_factory.h
+index e6887c0f..50463b55 100644
+--- a/third_party/blink/renderer/platform/fonts/web_font_typeface_factory.h
++++ b/third_party/blink/renderer/platform/fonts/web_font_typeface_factory.h
+@@ -51,7 +51,8 @@ class PLATFORM_EXPORT WebFontTypefaceFactory {
+     kSuccessSbixFont = 5,
+     kSuccessColrCpalFont = 6,
+     kSuccessColrV1Font = 7,
+-    kMaxValue = kSuccessColrV1Font
++    kSuccessSvgFont = 8,
++    kMaxValue = kSuccessSvgFont
+   };
+ 
+   static void ReportInstantiationResult(InstantiationResult);
+-- 
+2.46.0
+
