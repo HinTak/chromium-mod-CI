@@ -10,8 +10,8 @@ on:
 
 jobs:
   fetch-source:
-    runs-on: ubuntu-latest
-    container: fedora:39
+    runs-on: ubuntu-24.04
+    container: fedora:40
     permissions:
       contents: write
     steps:
@@ -32,8 +32,8 @@ jobs:
           path: before.tgz
 
   cache-clean:
-    runs-on: ubuntu-latest
-    container: fedora:39
+    runs-on: ubuntu-24.04
+    container: fedora:40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/cache@v3
@@ -53,8 +53,8 @@ jobs:
         run: ./chromium-latest.py --version 122.0.6238.2 --ffmpegclean --ffmpegarm
 
   fedora-job:
-    runs-on: ubuntu-latest
-    container: fedora:39
+    runs-on: ubuntu-24.04
+    container: fedora:40
     needs: cache-clean
     permissions:
       contents: write
