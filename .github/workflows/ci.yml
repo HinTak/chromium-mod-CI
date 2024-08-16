@@ -36,7 +36,7 @@ jobs:
     container: fedora:40
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         id: cache-chromium-clean
         with:
           path: |
@@ -60,7 +60,7 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         id: cache-chromium-clean
         with:
           path: |
