@@ -158,7 +158,7 @@ index b37d37c..747b446 100644
  %endif
  
 -%if 0%{?rhel} || 0%{?fedora} < 39
-+%if 0%{?rhel} || 0%{?fedora} < 40
++%if 0%{?rhel} || 0%{?fedora} < 41
  CHROMIUM_CORE_GN_DEFINES+=' chrome_pgo_phase=0'
  %endif
  
