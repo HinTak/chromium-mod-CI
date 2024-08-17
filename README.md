@@ -217,3 +217,8 @@ x86_64/state.log:2024-01-16 22:48:08,129 - Start: rpmbuild chromium-120.0.6099.2
 x86_64/state.log:2024-01-17 03:23:04,069 - Finish: rpmbuild chromium-120.0.6099.224-1.fc39.src.rpm
 x86_64/state.log:2024-01-17 03:23:05,862 - Finish: build phase for chromium-120.0.6099.224-1.fc39.src.rpm
 ```
+```
+overlay         75085112 48379312  26689416  65% /
+overlay         75085112 53971468  21097260  72% /
+overlay         75085112 65837244   9231484  88% /
+```
