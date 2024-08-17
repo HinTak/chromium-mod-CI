@@ -19,7 +19,7 @@ jobs:
       - run: df
       - run: dnf install -y curl dnf-utils rpm-build git
       - uses: actions/checkout@v4
-      - run: git clone -b 122.0.6261.128 --depth 1 --recurse-submodules=third_party/skia --recurse-submodules=third_party/ots/src/  --shallow-submodules https://chromium.googlesource.com/chromium/src chromium
+      - run: git clone -b 122.0.6238.2 --depth 1 --recurse-submodules=third_party/skia --recurse-submodules=third_party/ots/src/  --shallow-submodules https://chromium.googlesource.com/chromium/src chromium
       - run: pushd chromium && tar -czpf ${GITHUB_WORKSPACE}/before.tgz skia third_party/ots third_party/skia third_party/blink/renderer/platform chrome/VERSION && popd
       - run: df
       - uses: actions/upload-artifact@v4
@@ -36,8 +36,8 @@ jobs:
         id: cache-chromium-clean
         with:
           path: |
-            chromium-122.0.6261.128-clean.tar.xz
-          key: chromium-122.0.6261.128
+            chromium-122.0.6238.2-clean.tar.xz
+          key: chromium-122.0.6238.2
           enableCrossOsArchive: true
       - run: pwd
       - run: ls -Rl .
@@ -46,7 +46,7 @@ jobs:
       - run: ls -lR .
       - name: Build cache
         if: ${{ steps.cache-chromium-clean.outputs.cache-hit != 'true' }}
-        run: ./chromium-latest.py --version 122.0.6261.128 --ffmpegclean --ffmpegarm
+        run: ./chromium-latest.py --version 122.0.6238.2 --ffmpegclean --ffmpegarm
 
   fedora-job:
     runs-on: ubuntu-24.04
@@ -60,11 +60,11 @@ jobs:
         id: cache-chromium-clean
         with:
           path: |
-            chromium-122.0.6261.128-clean.tar.xz
-          key: chromium-122.0.6261.128
+            chromium-122.0.6238.2-clean.tar.xz
+          key: chromium-122.0.6238.2
           enableCrossOsArchive: true
       - run: ls -Rl .
-      - run: ls -lR chromium-122.0.6261.128*
+      - run: ls -lR chromium-122.0.6238.2*
       - run: cat /etc/os-release
       - run: df
       - run: dnf install -y curl dnf-utils rpm-build
@@ -75,7 +75,7 @@ jobs:
       - run: rpm -ivh a.rpm
       - run: rm a.rpm
       - run: rm -f ~/rpmbuild/SOURCES/chromium-*-clean.tar.xz
-      - run: cp -p chromium-122.0.6261.128-clean.tar.xz ~/rpmbuild/SOURCES/
+      - run: cp -p chromium-122.0.6238.2-clean.tar.xz ~/rpmbuild/SOURCES/
       - run: patch ~/rpmbuild/SPECS/chromium.spec chromium.spec.diff
       - run: cp 000*.patch ~/rpmbuild/SOURCES/
       - run: cp github.com/chromium/chromium/commit/*.patch ~/rpmbuild/SOURCES/
