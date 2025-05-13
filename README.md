@@ -1,3 +1,5 @@
+This reposity focuses on enabling SVG in OpenType support for Chromium.
+
 # Chromium SVG in OpenType support
 [![CI](https://github.com/HinTak/chromium-mod-CI/actions/workflows/ci.yml/badge.svg)](https://github.com/HinTak/chromium-mod-CI/actions/workflows/ci.yml)
 
